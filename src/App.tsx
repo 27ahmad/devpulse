@@ -1,29 +1,33 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import gsap from "gsap";
-import { Search, ArrowRight, User, BarChart3 } from "lucide-react";
+import {
+  Search,
+  ArrowRight,
+  GitCommit,
+  GitPullRequest,
+  Eye,
+  FolderGit2,
+  MapPin,
+  Calendar,
+  ExternalLink,
+} from "lucide-react";
 import { useGitHubUser } from "./hooks/useGitHubUser";
 import { useGitHubRepos } from "./hooks/useGitHubRepos";
 import { useContributions } from "./hooks/useContributions";
 import { useLanguageMastery } from "./hooks/useLanguageMastery";
-import { ProfileCard } from "./components/ProfileCard";
-import { RepoList } from "./components/RepoList";
-import { LanguageChart } from "./components/LanguageChart";
 import { ActivityHeatmap } from "./components/ActivityHeatmap";
 import { CodingPatterns } from "./components/CodingPatterns";
-import { OverviewStats } from "./components/OverviewStats";
 import { TopProjects } from "./components/TopProjects";
-import { RPGStatSheet } from "./components/RPGStatSheet";
+import { SkillConstellation } from "./components/SkillConstellation";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { DNAHelix } from "./components/DNAHelix";
 import {
   ProfileSkeleton,
-  ReposSkeleton,
   AnalyticsSkeleton,
 } from "./components/Skeleton";
-import { computeRPGStats } from "./utils/gamify";
+import { computeRPGStats, type RPGStats } from "./utils/gamify";
+import type { GitHubUser } from "./hooks/useGitHubUser";
 
-type Tab = "profile" | "analytics";
-
+/* ─── Search Input ─── */
 function SearchInput({
   onSubmit,
   size = "default",
@@ -68,6 +72,7 @@ function SearchInput({
   );
 }
 
+/* ─── Hero Landing ─── */
 function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -116,7 +121,7 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
         className="grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4"
       >
         {[
-          { label: "Languages", desc: "Proportional breakdown" },
+          { label: "Languages", desc: "3D constellation" },
           { label: "Patterns", desc: "Weekly & monthly" },
           { label: "Heatmap", desc: "Full year data" },
           { label: "RPG Stats", desc: "Character sheet" },
@@ -135,8 +140,217 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
   );
 }
 
+/* ─── XP Bar ─── */
+function XPBar({ value, max }: { value: number; max: number }) {
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!barRef.current) return;
+    const pct = Math.min((value / max) * 100, 100);
+    gsap.fromTo(
+      barRef.current,
+      { width: "0%" },
+      { width: `${pct}%`, duration: 1.2, ease: "power2.out", delay: 0.3 }
+    );
+  }, [value, max]);
+
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#1a1a2e]">
+      <div
+        ref={barRef}
+        className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--purple)]"
+      />
+    </div>
+  );
+}
+
+/* ─── Identity Banner: user info + RPG stats merged ─── */
+function IdentityBanner({
+  user,
+  rpgStats,
+}: {
+  user: GitHubUser;
+  rpgStats: RPGStats | null;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!cardRef.current) return;
+    gsap.fromTo(
+      cardRef.current,
+      { opacity: 0, y: 16 },
+      { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
+    );
+  }, []);
+
+  const joinYear = new Date(user.created_at).getFullYear();
+  const yearsActive = new Date().getFullYear() - joinYear;
+
+  return (
+    <div
+      ref={cardRef}
+      className="relative overflow-hidden rounded-xl border border-[var(--purple)]/15 bg-[var(--surface)]"
+    >
+      {/* Gradient accents */}
+      <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-[var(--purple)]/5 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-16 -left-16 h-32 w-32 rounded-full bg-[var(--accent)]/5 blur-3xl" />
+
+      <div className="relative p-6">
+        {/* Top row: avatar + identity + class badge */}
+        <div className="flex items-start gap-5">
+          <img
+            src={user.avatar_url}
+            alt={user.login}
+            className="h-16 w-16 rounded-xl ring-1 ring-white/10"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--text)]">
+                  {user.name ?? user.login}
+                </h2>
+                <a
+                  href={user.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+                >
+                  @{user.login}
+                  <ExternalLink size={10} />
+                </a>
+              </div>
+              {rpgStats && (
+                <span className="rounded border border-[var(--purple)]/20 bg-[var(--purple)]/5 px-2.5 py-1 text-xs font-medium text-[var(--purple)]">
+                  {rpgStats.title}
+                </span>
+              )}
+            </div>
+
+            {/* RPG class + XP */}
+            {rpgStats && (
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-lg">{rpgStats.classEmoji}</span>
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-semibold text-[var(--text)]">
+                      Level {rpgStats.level}
+                    </span>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {rpgStats.className}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="w-24">
+                      <XPBar value={rpgStats.xp} max={rpgStats.xpToNext} />
+                    </div>
+                    <span className="text-[10px] tabular-nums text-[var(--text-muted)]">
+                      {rpgStats.xp.toLocaleString()} /{" "}
+                      {rpgStats.xpToNext.toLocaleString()} XP
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Meta row */}
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-[var(--text-muted)]">
+          {user.bio && (
+            <span className="basis-full text-[var(--text-secondary)]">
+              {user.bio}
+            </span>
+          )}
+          {user.location && (
+            <span className="flex items-center gap-1.5">
+              <MapPin size={11} />
+              {user.location}
+            </span>
+          )}
+          <span className="flex items-center gap-1.5">
+            <Calendar size={11} />
+            {yearsActive}y on GitHub
+          </span>
+          <span>
+            <strong className="font-medium text-[var(--text)]">
+              {user.followers.toLocaleString()}
+            </strong>{" "}
+            followers
+          </span>
+          <span>
+            <strong className="font-medium text-[var(--text)]">
+              {user.following.toLocaleString()}
+            </strong>{" "}
+            following
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div className="my-5 h-px bg-[var(--border-subtle)]" />
+
+        {/* Stats grid */}
+        {rpgStats && (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+            {[
+              {
+                icon: <GitCommit size={13} />,
+                value: rpgStats.commits,
+                label: "Commits",
+              },
+              {
+                icon: <GitPullRequest size={13} />,
+                value: rpgStats.prs,
+                label: "Pull requests",
+              },
+              {
+                icon: <Eye size={13} />,
+                value: rpgStats.reviews,
+                label: "Reviews",
+              },
+              {
+                icon: <FolderGit2 size={13} />,
+                value: rpgStats.repoCount,
+                label: "Repositories",
+              },
+              {
+                icon: null,
+                value: rpgStats.consistency,
+                label: "Consistency",
+                suffix: "%",
+                highlight: true,
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="flex items-center gap-2.5">
+                {stat.icon && (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/5 text-[var(--text-muted)]">
+                    {stat.icon}
+                  </div>
+                )}
+                {!stat.icon && (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--green)]/10">
+                    <div className="h-2 w-2 rounded-full bg-[var(--green)]" />
+                  </div>
+                )}
+                <div>
+                  <span
+                    className={`text-sm font-semibold tabular-nums ${stat.highlight ? "text-[var(--green)]" : "text-[var(--text)]"}`}
+                  >
+                    {stat.value.toLocaleString()}
+                    {stat.suffix ?? ""}
+                  </span>
+                  <div className="text-[10px] text-[var(--text-muted)]">
+                    {stat.label}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Dashboard: single scrollable page ─── */
 function Dashboard({ username }: { username: string }) {
-  const [activeTab, setActiveTab] = useState<Tab>("profile");
   const contentRef = useRef<HTMLDivElement>(null);
 
   const userQuery = useGitHubUser(username);
@@ -157,7 +371,8 @@ function Dashboard({ username }: { username: string }) {
         })
       : null;
 
-  const analyticsLoading = contribQuery.isLoading || langQuery.isLoading;
+  const isLoading =
+    userQuery.isLoading || contribQuery.isLoading || langQuery.isLoading;
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -166,137 +381,64 @@ function Dashboard({ username }: { username: string }) {
       { opacity: 0, y: 8 },
       { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
     );
-  }, [activeTab]);
-
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "profile", label: "Profile", icon: <User size={14} /> },
-    { key: "analytics", label: "Analytics", icon: <BarChart3 size={14} /> },
-  ];
+  }, [username]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <nav className="flex gap-px rounded-md border border-[var(--border)] bg-[var(--border)] p-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex flex-1 items-center justify-center gap-2 py-2 text-xs font-medium transition-colors first:rounded-l-[5px] last:rounded-r-[5px] ${
-              activeTab === tab.key
-                ? "bg-[var(--surface-2)] text-[var(--text)]"
-                : "bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+    <div ref={contentRef} className="flex flex-col gap-4">
+      {/* Error */}
+      {userQuery.error && (
+        <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
+          {userQuery.error.message}
+        </div>
+      )}
 
-      <div ref={contentRef} key={activeTab}>
-        {activeTab === "profile" && (
-          <div className="flex flex-col gap-6">
-            <ErrorBoundary>
-              {userQuery.isLoading && <ProfileSkeleton />}
-              {userQuery.error && (
-                <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
-                  {userQuery.error.message}
-                </div>
-              )}
-              {userQuery.data && <ProfileCard user={userQuery.data} />}
-            </ErrorBoundary>
+      {/* Loading */}
+      {isLoading && (
+        <>
+          <ProfileSkeleton />
+          <AnalyticsSkeleton />
+        </>
+      )}
 
-            <ErrorBoundary>
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-medium text-[var(--text)]">
-                    Repositories
-                  </span>
-                  {reposQuery.data && (
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {reposQuery.data.length} repos
-                    </span>
-                  )}
-                </div>
-                {reposQuery.isLoading && <ReposSkeleton />}
-                {reposQuery.error && (
-                  <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
-                    Failed to load repositories.
-                  </div>
-                )}
-                {reposQuery.data && <RepoList repos={reposQuery.data} />}
-              </div>
-            </ErrorBoundary>
-          </div>
-        )}
+      {/* Identity Banner */}
+      {userQuery.data && (
+        <ErrorBoundary>
+          <IdentityBanner user={userQuery.data} rpgStats={rpgStats} />
+        </ErrorBoundary>
+      )}
 
-        {activeTab === "analytics" && (
-          <div className="flex flex-col gap-3">
-            {analyticsLoading && <AnalyticsSkeleton />}
+      {/* Skill Constellation */}
+      {langQuery.data && (
+        <ErrorBoundary>
+          <SkillConstellation data={langQuery.data} />
+        </ErrorBoundary>
+      )}
 
-            {(contribQuery.error || langQuery.error) && (
-              <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
-                {contribQuery.error?.message ?? "Failed to load analytics data."}
-              </div>
-            )}
+      {/* Contribution Heatmap */}
+      {contribQuery.data && (
+        <ErrorBoundary>
+          <ActivityHeatmap data={contribQuery.data} />
+        </ErrorBoundary>
+      )}
 
-            {!analyticsLoading && (
-              <>
-                {/* All-time overview */}
-                {userQuery.data && reposQuery.data && (
-                  <ErrorBoundary>
-                    <OverviewStats
-                      user={userQuery.data}
-                      repos={reposQuery.data}
-                    />
-                  </ErrorBoundary>
-                )}
+      {/* Coding Patterns */}
+      {contribQuery.data && (
+        <ErrorBoundary>
+          <CodingPatterns data={contribQuery.data} />
+        </ErrorBoundary>
+      )}
 
-                {/* RPG card */}
-                {rpgStats && (
-                  <ErrorBoundary>
-                    <RPGStatSheet stats={rpgStats} />
-                  </ErrorBoundary>
-                )}
-
-                {/* Engineering DNA */}
-                {contribQuery.data && (
-                  <ErrorBoundary>
-                    <DNAHelix data={contribQuery.data} />
-                  </ErrorBoundary>
-                )}
-
-                {/* Past year activity */}
-                {contribQuery.data && (
-                  <ErrorBoundary>
-                    <ActivityHeatmap data={contribQuery.data} />
-                  </ErrorBoundary>
-                )}
-                {contribQuery.data && (
-                  <ErrorBoundary>
-                    <CodingPatterns data={contribQuery.data} />
-                  </ErrorBoundary>
-                )}
-
-                {/* All-time data */}
-                {reposQuery.data && (
-                  <ErrorBoundary>
-                    <TopProjects repos={reposQuery.data} />
-                  </ErrorBoundary>
-                )}
-                {langQuery.data && (
-                  <ErrorBoundary>
-                    <LanguageChart data={langQuery.data} />
-                  </ErrorBoundary>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </div>
+      {/* Top Projects */}
+      {reposQuery.data && (
+        <ErrorBoundary>
+          <TopProjects repos={reposQuery.data} />
+        </ErrorBoundary>
+      )}
     </div>
   );
 }
 
+/* ─── App ─── */
 function App() {
   const [username, setUsername] = useState(() => {
     const params = new URLSearchParams(window.location.search);
