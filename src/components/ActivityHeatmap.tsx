@@ -11,8 +11,11 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
     );
   }
 
-  const value = entries.map(([date, count]) => ({ date, count }));
-  const dates = entries.map(([d]) => d).sort();
+  const value = entries
+    .filter(([_, count]) => count > 0)
+    .map(([date, count]) => ({ date: date.replace(/-/g, "/"), count }));
+
+  const dates = entries.map(([d]) => d.replace(/-/g, "/")).sort();
   const startDate = new Date(dates[0]);
   const endDate = new Date(dates[dates.length - 1]);
 
