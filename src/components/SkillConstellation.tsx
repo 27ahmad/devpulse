@@ -1,30 +1,42 @@
 import { useRef, useMemo, useEffect, useState, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { ThreeEvent } from "@react-three/fiber";
-import { Float, Text } from "@react-three/drei";
+import { Float, Text, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import type { LanguageStat } from "../hooks/useLanguageMastery";
 import { getLanguageColor } from "../utils/languages";
 
-/* ─── layout: arrange stars in a 3D constellation ─── */
+/* ─── layout: arrange stars in a flat ring constellation ─── */
 function layoutStars(data: LanguageStat[]) {
   const maxMastery = Math.max(...data.map((d) => d.mastery), 1);
 
-  // Use a golden-angle spiral in 3D for even distribution
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-
   return data.map((stat, i) => {
-    const t = i / Math.max(data.length - 1, 1);
-    const radius = 1.8 + t * 1.2; // inner = most mastery
-    const theta = goldenAngle * i;
-    const phi = Math.acos(1 - 2 * ((i + 0.5) / data.length));
-
-    const x = radius * Math.sin(phi) * Math.cos(theta);
-    const y = radius * Math.cos(phi) * 0.6; // flatten vertically
-    const z = radius * Math.sin(phi) * Math.sin(theta);
-
     const normalizedMastery = stat.mastery / maxMastery;
-    const starSize = 0.08 + normalizedMastery * 0.2;
+
+    // Primary language at center, others in a ring around it
+    let x: number, y: number, z: number;
+
+    if (i === 0) {
+      // Primary language: center with slight float
+      x = 0;
+      y = 0;
+      z = 0;
+    } else {
+      // Concentric ring layout — inner ring for top languages, outer for less used
+      const ringIndex = i <= 4 ? 0 : 1;
+      const ringRadius = ringIndex === 0 ? 2.2 : 3.4;
+      const itemsInRing = ringIndex === 0 ? Math.min(data.length - 1, 4) : data.length - 5;
+      const indexInRing = ringIndex === 0 ? i - 1 : i - 5;
+      const angleOffset = ringIndex === 0 ? Math.PI / 6 : 0; // stagger rings
+      const angle =
+        angleOffset + (indexInRing / Math.max(itemsInRing, 1)) * Math.PI * 2;
+
+      x = ringRadius * Math.cos(angle);
+      y = (Math.random() - 0.5) * 0.4; // slight vertical variation
+      z = ringRadius * Math.sin(angle);
+    }
+
+    const starSize = i === 0 ? 0.32 : 0.1 + normalizedMastery * 0.18;
 
     return {
       ...stat,
@@ -45,22 +57,52 @@ function ConstellationLines({
   const lineGeom = useMemo(() => {
     const points: THREE.Vector3[] = [];
 
-    // Connect stars that are close enough (like a real constellation)
-    for (let i = 0; i < stars.length; i++) {
-      for (let j = i + 1; j < stars.length; j++) {
-        const a = new THREE.Vector3(...stars[i].position);
-        const b = new THREE.Vector3(...stars[j].position);
-        const dist = a.distanceTo(b);
-
-        // Only connect relatively close stars
-        if (dist < 3.5) {
-          points.push(a, b);
-        }
+    // Connect center star to inner ring
+    if (stars.length > 1) {
+      const center = new THREE.Vector3(...stars[0].position);
+      for (let i = 1; i < Math.min(stars.length, 5); i++) {
+        points.push(center.clone(), new THREE.Vector3(...stars[i].position));
       }
     }
 
-    const geom = new THREE.BufferGeometry().setFromPoints(points);
-    return geom;
+    // Connect adjacent stars in each ring
+    const innerRing = stars.slice(1, 5);
+    for (let i = 0; i < innerRing.length; i++) {
+      const next = (i + 1) % innerRing.length;
+      points.push(
+        new THREE.Vector3(...innerRing[i].position),
+        new THREE.Vector3(...innerRing[next].position)
+      );
+    }
+
+    const outerRing = stars.slice(5);
+    for (let i = 0; i < outerRing.length; i++) {
+      const next = (i + 1) % outerRing.length;
+      points.push(
+        new THREE.Vector3(...outerRing[i].position),
+        new THREE.Vector3(...outerRing[next].position)
+      );
+    }
+
+    // Connect some outer to nearest inner
+    for (const outer of outerRing) {
+      let minDist = Infinity;
+      let nearest: THREE.Vector3 | null = null;
+      const op = new THREE.Vector3(...outer.position);
+      for (const inner of innerRing) {
+        const ip = new THREE.Vector3(...inner.position);
+        const d = op.distanceTo(ip);
+        if (d < minDist) {
+          minDist = d;
+          nearest = ip;
+        }
+      }
+      if (nearest && minDist < 4) {
+        points.push(op, nearest);
+      }
+    }
+
+    return new THREE.BufferGeometry().setFromPoints(points);
   }, [stars]);
 
   return (
@@ -68,7 +110,7 @@ function ConstellationLines({
       <lineBasicMaterial
         color="#ffffff"
         transparent
-        opacity={0.06}
+        opacity={0.08}
         depthWrite={false}
       />
     </lineSegments>
@@ -76,6 +118,14 @@ function ConstellationLines({
 }
 
 /* ─── Individual Star ─── */
+interface StarInfo {
+  language: string;
+  bytes: number;
+  repoCount: number;
+  color: string;
+  mastery: number;
+}
+
 function Star({
   position,
   size,
@@ -87,6 +137,7 @@ function Star({
   onHover,
   onUnhover,
   isHovered,
+  isPrimary,
 }: {
   position: [number, number, number];
   size: number;
@@ -95,31 +146,46 @@ function Star({
   mastery: number;
   bytes: number;
   repoCount: number;
-  onHover: (info: StarInfo | null) => void;
+  onHover: (info: StarInfo) => void;
   onUnhover: () => void;
   isHovered: boolean;
+  isPrimary: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null!);
   const glowRef = useRef<THREE.Mesh>(null!);
+  const ringsRef = useRef<THREE.Mesh>(null!);
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-    // subtle pulse
-    const pulse = 1 + Math.sin(clock.elapsedTime * 2 + mastery * 10) * 0.05;
-    const scale = isHovered ? size * 1.6 : size * pulse;
+    const t = clock.elapsedTime;
+
+    // Pulse
+    const pulse = 1 + Math.sin(t * 1.5 + mastery * 10) * 0.08;
+    const scale = isHovered ? size * 1.5 : size * pulse;
     meshRef.current.scale.setScalar(scale);
 
     if (glowRef.current) {
-      glowRef.current.scale.setScalar(scale * (isHovered ? 4 : 3));
+      const glowScale = isHovered ? scale * 5 : scale * 3.5;
+      glowRef.current.scale.setScalar(glowScale);
+      // @ts-expect-error - accessing material opacity
+      glowRef.current.material.opacity = isHovered
+        ? 0.12 + Math.sin(t * 3) * 0.03
+        : 0.05;
+    }
+
+    // Rotate rings for primary star
+    if (ringsRef.current) {
+      ringsRef.current.rotation.z = t * 0.3;
+      ringsRef.current.rotation.x = Math.PI / 3;
     }
   });
 
   const handlePointerOver = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
-      onHover({ language, bytes, repoCount, color });
+      onHover({ language, bytes, repoCount, color, mastery });
     },
-    [language, bytes, repoCount, color, onHover]
+    [language, bytes, repoCount, color, mastery, onHover]
   );
 
   const handlePointerOut = useCallback(
@@ -132,16 +198,30 @@ function Star({
 
   return (
     <group position={position}>
-      {/* Glow sphere */}
+      {/* Outer glow */}
       <mesh ref={glowRef}>
-        <sphereGeometry args={[1, 12, 12]} />
+        <sphereGeometry args={[1, 16, 16]} />
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={isHovered ? 0.15 : 0.06}
+          opacity={0.05}
           depthWrite={false}
+          side={THREE.BackSide}
         />
       </mesh>
+
+      {/* Orbit ring for primary star */}
+      {isPrimary && (
+        <mesh ref={ringsRef}>
+          <torusGeometry args={[size * 5, 0.015, 8, 64]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={0.2}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
 
       {/* Core star */}
       <mesh
@@ -149,35 +229,51 @@ function Star({
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       >
-        <sphereGeometry args={[1, 16, 16]} />
+        <icosahedronGeometry args={[1, isPrimary ? 3 : 2]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={isHovered ? 1.5 : 0.8}
-          roughness={0.2}
-          metalness={0.3}
+          emissiveIntensity={isHovered ? 2 : isPrimary ? 1.2 : 0.7}
+          roughness={0.15}
+          metalness={0.4}
           toneMapped={false}
         />
       </mesh>
 
       {/* Label */}
       <Text
-        position={[0, size * 3 + 0.15, 0]}
-        fontSize={0.18}
-        color={isHovered ? "#ffffff" : "#a1a1aa"}
+        position={[0, size * 2.5 + 0.25, 0]}
+        fontSize={isPrimary ? 0.26 : 0.16}
+        color={isHovered ? "#ffffff" : isPrimary ? "#e4e4e7" : "#71717a"}
         anchorX="center"
         anchorY="bottom"
-        outlineWidth={0.02}
+        outlineWidth={0.025}
         outlineColor="#000000"
+        font="https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwY.woff2"
       >
         {language}
       </Text>
+
+      {/* Percentage label for top stars */}
+      {isPrimary && (
+        <Text
+          position={[0, -(size * 2.5 + 0.15), 0]}
+          fontSize={0.14}
+          color="#52525b"
+          anchorX="center"
+          anchorY="top"
+          outlineWidth={0.02}
+          outlineColor="#000000"
+        >
+          Primary Language
+        </Text>
+      )}
     </group>
   );
 }
 
 /* ─── Background star dust ─── */
-function StarDust({ count = 200 }: { count?: number }) {
+function StarDust({ count = 300 }: { count?: number }) {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
 
   useEffect(() => {
@@ -187,16 +283,16 @@ function StarDust({ count = 200 }: { count?: number }) {
 
     for (let i = 0; i < count; i++) {
       dummy.position.set(
-        (Math.random() - 0.5) * 16,
-        (Math.random() - 0.5) * 16,
-        (Math.random() - 0.5) * 16
+        (Math.random() - 0.5) * 20,
+        (Math.random() - 0.5) * 14,
+        (Math.random() - 0.5) * 20
       );
-      dummy.scale.setScalar(0.005 + Math.random() * 0.015);
+      dummy.scale.setScalar(0.003 + Math.random() * 0.012);
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
 
-      const brightness = 0.3 + Math.random() * 0.7;
-      color.setRGB(brightness, brightness, brightness);
+      const brightness = 0.2 + Math.random() * 0.6;
+      color.setRGB(brightness, brightness, brightness * 1.1);
       meshRef.current.setColorAt(i, color);
     }
     meshRef.current.instanceMatrix.needsUpdate = true;
@@ -207,8 +303,7 @@ function StarDust({ count = 200 }: { count?: number }) {
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-    meshRef.current.rotation.y = clock.elapsedTime * 0.005;
-    meshRef.current.rotation.x = clock.elapsedTime * 0.003;
+    meshRef.current.rotation.y = clock.elapsedTime * 0.003;
   });
 
   return (
@@ -219,35 +314,7 @@ function StarDust({ count = 200 }: { count?: number }) {
   );
 }
 
-/* ─── Cursor handler for canvas ─── */
-function Cursor() {
-  const { gl } = useThree();
-  useEffect(() => {
-    const canvas = gl.domElement;
-    const setCursor = (style: string) => {
-      canvas.style.cursor = style;
-    };
-    const onOver = () => setCursor("pointer");
-    const onOut = () => setCursor("grab");
-    canvas.addEventListener("pointerover", onOver);
-    canvas.addEventListener("pointerout", onOut);
-    canvas.style.cursor = "grab";
-    return () => {
-      canvas.removeEventListener("pointerover", onOver);
-      canvas.removeEventListener("pointerout", onOut);
-    };
-  }, [gl]);
-  return null;
-}
-
 /* ─── Scene ─── */
-interface StarInfo {
-  language: string;
-  bytes: number;
-  repoCount: number;
-  color: string;
-}
-
 function ConstellationScene({
   data,
   hoveredStar,
@@ -262,7 +329,7 @@ function ConstellationScene({
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
-    groupRef.current.rotation.y = clock.elapsedTime * 0.04;
+    groupRef.current.rotation.y = clock.elapsedTime * 0.03;
   });
 
   const handleUnhover = useCallback(
@@ -272,19 +339,25 @@ function ConstellationScene({
 
   return (
     <>
-      <ambientLight intensity={0.15} />
-      <pointLight position={[5, 5, 5]} intensity={0.4} color="#ffffff" />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[5, 5, 5]} intensity={0.5} color="#ffffff" />
       <pointLight
-        position={[-3, -2, 4]}
+        position={[-4, -2, 4]}
         intensity={0.3}
         color="#3b82f6"
         distance={15}
       />
+      <pointLight
+        position={[2, 3, -4]}
+        intensity={0.2}
+        color="#a78bfa"
+        distance={12}
+      />
 
-      <Float speed={0.5} rotationIntensity={0} floatIntensity={0.15}>
+      <Float speed={0.4} rotationIntensity={0} floatIntensity={0.1}>
         <group ref={groupRef}>
           <ConstellationLines stars={stars} />
-          {stars.map((star) => (
+          {stars.map((star, i) => (
             <Star
               key={star.language}
               position={star.position}
@@ -297,18 +370,26 @@ function ConstellationScene({
               onHover={setHoveredStar}
               onUnhover={handleUnhover}
               isHovered={hoveredStar?.language === star.language}
+              isPrimary={i === 0}
             />
           ))}
         </group>
       </Float>
 
       <StarDust />
-      <Cursor />
+
+      <OrbitControls
+        enableZoom={false}
+        enablePan={false}
+        autoRotate={false}
+        minPolarAngle={Math.PI * 0.3}
+        maxPolarAngle={Math.PI * 0.7}
+      />
     </>
   );
 }
 
-/* ─── Tooltip overlay ─── */
+/* ─── Helpers ─── */
 function formatBytes(bytes: number): string {
   if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
   if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(1)} KB`;
@@ -369,12 +450,12 @@ export function SkillConstellation({ data }: { data: LanguageStat[] }) {
       </div>
 
       {/* 3D Canvas */}
-      <div className="relative h-[380px] w-full cursor-grab active:cursor-grabbing">
+      <div className="relative h-[400px] w-full cursor-grab active:cursor-grabbing">
         {isVisible ? (
           <Canvas
             camera={{
-              position: [0, 0, 6.5],
-              fov: 50,
+              position: [0, 2, 7],
+              fov: 48,
               near: 0.1,
               far: 100,
             }}
@@ -400,9 +481,9 @@ export function SkillConstellation({ data }: { data: LanguageStat[] }) {
 
         {/* Hover tooltip */}
         {hoveredStar && (
-          <div className="pointer-events-none absolute left-1/2 bottom-6 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg)]/90 px-4 py-2.5 backdrop-blur-sm">
+          <div className="pointer-events-none absolute left-1/2 bottom-6 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg)]/90 px-4 py-2.5 backdrop-blur-sm shadow-lg">
             <span
-              className="inline-block h-3 w-3 rounded-full"
+              className="inline-block h-3.5 w-3.5 rounded-full ring-2 ring-white/10"
               style={{ backgroundColor: hoveredStar.color }}
             />
             <div>
@@ -411,25 +492,26 @@ export function SkillConstellation({ data }: { data: LanguageStat[] }) {
               </div>
               <div className="text-[10px] text-[var(--text-muted)]">
                 {formatBytes(hoveredStar.bytes)} · {hoveredStar.repoCount}{" "}
-                {hoveredStar.repoCount === 1 ? "repo" : "repos"}
+                {hoveredStar.repoCount === 1 ? "repo" : "repos"} ·{" "}
+                {((hoveredStar.bytes / totalBytes) * 100).toFixed(1)}%
               </div>
             </div>
           </div>
         )}
 
         {/* Edge gradients */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[var(--surface)] to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[var(--surface)] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-[var(--surface)] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[var(--surface)] to-transparent" />
       </div>
 
       {/* Legend bar */}
-      <div className="flex flex-wrap gap-3 border-t border-[var(--border-subtle)] px-5 py-3">
-        {data.slice(0, 6).map((stat) => {
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-[var(--border-subtle)] px-5 py-3">
+        {data.map((stat) => {
           const pct = ((stat.bytes / totalBytes) * 100).toFixed(1);
           return (
             <div
               key={stat.language}
-              className="flex items-center gap-1.5 text-[10px]"
+              className={`flex items-center gap-1.5 text-[10px] transition-opacity ${hoveredStar && hoveredStar.language !== stat.language ? "opacity-40" : ""}`}
             >
               <span
                 className="inline-block h-2 w-2 rounded-full"

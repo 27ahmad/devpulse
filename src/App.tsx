@@ -19,6 +19,8 @@ import { ActivityHeatmap } from "./components/ActivityHeatmap";
 import { CodingPatterns } from "./components/CodingPatterns";
 import { TopProjects } from "./components/TopProjects";
 import { SkillConstellation } from "./components/SkillConstellation";
+import { StreakCounter } from "./components/StreakCounter";
+import { computeStreaks } from "./utils/streaks";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import {
   ProfileSkeleton,
@@ -411,6 +413,18 @@ function Dashboard({ username }: { username: string }) {
       {langQuery.data && (
         <ErrorBoundary>
           <SkillConstellation data={langQuery.data} />
+        </ErrorBoundary>
+      )}
+
+      {/* Streaks */}
+      {contribQuery.data && (
+        <ErrorBoundary>
+          <StreakCounter
+            streak={computeStreaks(
+              contribQuery.data.dailyContributions,
+              new Date().getTimezoneOffset()
+            )}
+          />
         </ErrorBoundary>
       )}
 
