@@ -16,6 +16,20 @@ export function ProfileSkeleton() {
   );
 }
 
+export function AnalyticsSkeleton() {
+  return (
+    <div className="flex animate-pulse flex-col gap-4">
+      <div className="h-48 rounded-lg bg-[#161b22] border border-[#30363d]" />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="h-24 rounded-lg bg-[#161b22] border border-[#30363d]" />
+        <div className="h-24 rounded-lg bg-[#161b22] border border-[#30363d]" />
+      </div>
+      <div className="h-32 rounded-lg bg-[#161b22] border border-[#30363d]" />
+      <div className="h-40 rounded-lg bg-[#161b22] border border-[#30363d]" />
+    </div>
+  );
+}
+
 export function ReposSkeleton() {
   return (
     <div className="grid gap-3 sm:grid-cols-2">

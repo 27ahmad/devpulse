@@ -1,10 +1,23 @@
 import { useState, useCallback } from "react";
 import { useGitHubUser } from "./hooks/useGitHubUser";
 import { useGitHubRepos } from "./hooks/useGitHubRepos";
+import { useGitHubEvents } from "./hooks/useGitHubEvents";
+import { useLanguageMastery } from "./hooks/useLanguageMastery";
 import { ProfileCard } from "./components/ProfileCard";
 import { RepoList } from "./components/RepoList";
+import { LanguageChart } from "./components/LanguageChart";
+import { StreakCounter } from "./components/StreakCounter";
+import { ActivityHeatmap } from "./components/ActivityHeatmap";
+import { DORAMetrics } from "./components/DORAMetrics";
+import { RPGStatSheet } from "./components/RPGStatSheet";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { ProfileSkeleton, ReposSkeleton } from "./components/Skeleton";
+import {
+  ProfileSkeleton,
+  ReposSkeleton,
+  AnalyticsSkeleton,
+} from "./components/Skeleton";
+import { computeStreaks } from "./utils/streaks";
+import { computeRPGStats } from "./utils/gamify";
 
 type Tab = "profile" | "analytics";
 
@@ -47,11 +60,32 @@ function Dashboard({ username }: { username: string }) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
   const userQuery = useGitHubUser(username);
   const reposQuery = useGitHubRepos(username);
+  const eventsQuery = useGitHubEvents(username);
+  const langQuery = useLanguageMastery(reposQuery.data);
+
+  const timezoneOffset = new Date().getTimezoneOffset();
+
+  const streak = eventsQuery.data
+    ? computeStreaks(eventsQuery.data.dailyCommits, timezoneOffset)
+    : null;
+
+  const rpgStats =
+    eventsQuery.data && langQuery.data && streak && userQuery.data
+      ? computeRPGStats(
+          eventsQuery.data.totalCommits,
+          langQuery.data[0]?.language ?? null,
+          streak.currentStreak,
+          userQuery.data.public_repos
+        )
+      : null;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "profile", label: "Profile" },
     { key: "analytics", label: "Analytics" },
   ];
+
+  const analyticsLoading =
+    eventsQuery.isLoading || langQuery.isLoading;
 
   return (
     <div className="flex flex-col gap-6">
@@ -101,8 +135,50 @@ function Dashboard({ username }: { username: string }) {
       )}
 
       {activeTab === "analytics" && (
-        <div className="rounded-lg border border-[#30363d] bg-[#161b22] p-8 text-center text-[#7d8590]">
-          Analytics coming in Phase 2.
+        <div className="flex flex-col gap-6">
+          {analyticsLoading && <AnalyticsSkeleton />}
+
+          {(eventsQuery.error || langQuery.error) && (
+            <div className="rounded-lg border border-[#f8514966] bg-[#f8514915] p-4 text-center text-sm text-[#f85149]">
+              Failed to load some analytics data.
+            </div>
+          )}
+
+          {!analyticsLoading && (
+            <>
+              {streak && (
+                <ErrorBoundary>
+                  <StreakCounter streak={streak} />
+                </ErrorBoundary>
+              )}
+
+              {langQuery.data && (
+                <ErrorBoundary>
+                  <LanguageChart data={langQuery.data} />
+                </ErrorBoundary>
+              )}
+
+              {eventsQuery.data && (
+                <ErrorBoundary>
+                  <ActivityHeatmap
+                    dailyCommits={eventsQuery.data.dailyCommits}
+                  />
+                </ErrorBoundary>
+              )}
+
+              {eventsQuery.data && (
+                <ErrorBoundary>
+                  <DORAMetrics summary={eventsQuery.data} />
+                </ErrorBoundary>
+              )}
+
+              {rpgStats && (
+                <ErrorBoundary>
+                  <RPGStatSheet stats={rpgStats} />
+                </ErrorBoundary>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>
