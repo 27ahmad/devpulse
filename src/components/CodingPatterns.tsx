@@ -139,8 +139,11 @@ export function CodingPatterns({ data }: { data: ContributionData }) {
 
   return (
     <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
-      <div className="mb-1 text-sm font-medium text-[var(--text)]">
-        Coding Patterns
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-sm font-medium text-[var(--text)]">
+          Coding Patterns
+        </span>
+        <span className="text-[10px] text-[var(--text-muted)]">Past year</span>
       </div>
       <p className="mb-5 text-xs text-[var(--text-muted)]">
         {activeDays} active days &middot; {avgPerActiveDay} contributions/day

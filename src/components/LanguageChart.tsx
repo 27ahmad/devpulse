@@ -20,8 +20,11 @@ export function LanguageChart({ data }: { data: LanguageStat[] }) {
 
   return (
     <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
-      <div className="mb-5 text-sm font-medium text-[var(--text)]">
-        Languages
+      <div className="mb-5 flex items-center justify-between">
+        <span className="text-sm font-medium text-[var(--text)]">
+          Languages
+        </span>
+        <span className="text-[10px] text-[var(--text-muted)]">All time</span>
       </div>
 
       {/* Stacked bar */}

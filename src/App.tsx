@@ -10,6 +10,8 @@ import { RepoList } from "./components/RepoList";
 import { LanguageChart } from "./components/LanguageChart";
 import { ActivityHeatmap } from "./components/ActivityHeatmap";
 import { CodingPatterns } from "./components/CodingPatterns";
+import { OverviewStats } from "./components/OverviewStats";
+import { TopProjects } from "./components/TopProjects";
 import { RPGStatSheet } from "./components/RPGStatSheet";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import {
@@ -238,9 +240,27 @@ function Dashboard({ username }: { username: string }) {
 
             {!analyticsLoading && (
               <>
+                {/* All-time overview */}
+                {userQuery.data && reposQuery.data && (
+                  <ErrorBoundary>
+                    <OverviewStats
+                      user={userQuery.data}
+                      repos={reposQuery.data}
+                    />
+                  </ErrorBoundary>
+                )}
+
+                {/* RPG card */}
                 {rpgStats && (
                   <ErrorBoundary>
                     <RPGStatSheet stats={rpgStats} />
+                  </ErrorBoundary>
+                )}
+
+                {/* Past year activity */}
+                {contribQuery.data && (
+                  <ErrorBoundary>
+                    <ActivityHeatmap data={contribQuery.data} />
                   </ErrorBoundary>
                 )}
                 {contribQuery.data && (
@@ -248,9 +268,11 @@ function Dashboard({ username }: { username: string }) {
                     <CodingPatterns data={contribQuery.data} />
                   </ErrorBoundary>
                 )}
-                {contribQuery.data && (
+
+                {/* All-time data */}
+                {reposQuery.data && (
                   <ErrorBoundary>
-                    <ActivityHeatmap data={contribQuery.data} />
+                    <TopProjects repos={reposQuery.data} />
                   </ErrorBoundary>
                 )}
                 {langQuery.data && (
