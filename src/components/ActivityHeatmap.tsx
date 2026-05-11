@@ -34,10 +34,11 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
           value={value}
           startDate={startDate}
           endDate={endDate}
-          width="100%"
+          width={data.totalWeeks * 14 + 40}
           rectSize={11}
+          legendCellSize={0}
           space={3}
-          style={{ color: "var(--text-muted)" }}
+          style={{ minWidth: "100%", color: "var(--text-muted)" }}
           panelColors={{
             0: "var(--surface-2)",
             2: "#14532d",
