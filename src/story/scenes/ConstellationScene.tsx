@@ -7,40 +7,34 @@ interface Segment {
   language: string;
   pct: number;
   color: string;
-  bytes: number;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
-  if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(1)} KB`;
-  return `${bytes} B`;
+  commits: number;
 }
 
 export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
   const { insights, palette } = ctx;
   const languages = insights.languages;
 
-  const totalBytes = languages.reduce((s, l) => s + l.bytes, 0);
-  if (totalBytes === 0 || languages.length === 0) return null;
+  const totalCommits = languages.reduce((s, l) => s + l.commits, 0);
+  if (totalCommits === 0 || languages.length === 0) return null;
 
   // Roll the tail into "Other" so the bar stays legible
   const significant: Segment[] = [];
   let other = 0;
   for (const l of languages) {
-    const pct = l.bytes / totalBytes;
+    const pct = l.commits / totalCommits;
     const color = l.color ?? getLanguageColor(l.language);
     if (pct >= 0.02) {
-      significant.push({ language: l.language, pct, color, bytes: l.bytes });
+      significant.push({ language: l.language, pct, color, commits: l.commits });
     } else {
-      other += l.bytes;
+      other += l.commits;
     }
   }
-  if (other / totalBytes >= 0.01) {
+  if (other / totalCommits >= 0.01) {
     significant.push({
       language: "Other",
-      pct: other / totalBytes,
+      pct: other / totalCommits,
       color: "#52525b",
-      bytes: other,
+      commits: other,
     });
   }
 
@@ -64,10 +58,10 @@ export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
         transition={{ delay: 0.2, duration: 0.7 }}
         className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
       >
-        <CountUp value={insights.languagesUsedCount} duration={1.2} /> languages
+        <CountUp value={insights.languagesUsedCount} duration={1.2} /> languages,
         <br />
         <span className="text-white/60 font-normal">
-          {formatBytes(totalBytes)} of code this year.
+          <CountUp value={totalCommits} duration={1.2} /> commits this year.
         </span>
       </motion.div>
 

@@ -167,15 +167,17 @@ export function computeInsights(args: {
     0
   );
 
-  const totalBytes = languages.reduce((s, l) => s + l.bytes, 0);
+  const totalLangCommits = languages.reduce((s, l) => s + l.commits, 0);
   const primaryLanguage = languages[0]?.language ?? null;
   const specializationPct =
-    totalBytes > 0 && languages[0] ? languages[0].bytes / totalBytes : 0;
+    totalLangCommits > 0 && languages[0]
+      ? languages[0].commits / totalLangCommits
+      : 0;
 
   const significant = languages.filter((l) =>
-    totalBytes > 0 ? l.bytes / totalBytes >= 0.01 : false
+    totalLangCommits > 0 ? l.commits / totalLangCommits >= 0.01 : false
   );
-  const shares = significant.map((l) => l.bytes / totalBytes);
+  const shares = significant.map((l) => l.commits / totalLangCommits);
   const languageDiversity = shannonEntropy(shares);
 
   const weekdaySum =

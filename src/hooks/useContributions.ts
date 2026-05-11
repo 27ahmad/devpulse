@@ -3,7 +3,7 @@ import { fetchJson } from "../utils/fetchApi";
 
 export interface LanguageStat {
   language: string;
-  bytes: number;
+  commits: number;
   repoCount: number;
   color: string | null;
 }
@@ -35,6 +35,7 @@ export interface ContributionData {
   homeBase: HomeBase | null;
   reposCreatedThisYear: number;
   reposContributedTo: number;
+  ownedReposContributed: number;
   starsEarned: number;
   userCreatedAt: string;
 }

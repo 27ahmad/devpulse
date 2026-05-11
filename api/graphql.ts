@@ -2,8 +2,6 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 
-// Single round-trip: calendar + totals + per-repo commit contributions w/
-// languages + repos created this year. Anything else we need is here.
 const CONTRIBUTIONS_QUERY = `
 query($username: String!) {
   user(login: $username) {
@@ -30,26 +28,13 @@ query($username: String!) {
           nameWithOwner
           url
           isPrivate
+          isFork
           stargazerCount
+          owner { login }
           primaryLanguage { name color }
-          languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
-            edges {
-              size
-              node { name color }
-            }
-          }
         }
       }
       totalRepositoryContributions
-      repositoryContributions(first: 20) {
-        nodes {
-          repository {
-            nameWithOwner
-            createdAt
-            isPrivate
-          }
-        }
-      }
     }
   }
 }
@@ -61,14 +46,10 @@ interface CommitContrib {
     nameWithOwner: string;
     url: string;
     isPrivate: boolean;
+    isFork: boolean;
     stargazerCount: number;
+    owner: { login: string };
     primaryLanguage: { name: string; color: string } | null;
-    languages: {
-      edges: Array<{
-        size: number;
-        node: { name: string; color: string | null };
-      }>;
-    };
   };
 }
 
@@ -129,7 +110,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (!firstActiveDate) firstActiveDate = day.date;
           lastActiveDate = day.date;
         }
-
         const month = day.date.slice(0, 7);
         monthlyTotals[month] = (monthlyTotals[month] ?? 0) + day.contributionCount;
       }
@@ -138,16 +118,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const totalWeeks = calendar.weeks.length;
 
-    // Past-year language aggregation, weighted by commits per repo.
-    // GitHub gives us each repo's full language byte breakdown; we attribute
-    // those bytes to the user's year proportional to how much they committed.
-    const langTotals = new Map<
-      string,
-      { bytes: number; repos: number; color: string | null }
-    >();
+    // ── Language signal ──
+    // We count *user commits* per repo's primary language. That maps cleanly
+    // to "what the user spent their time writing this year." It avoids the
+    // trap of attributing a huge repo's total byte count to a contributor who
+    // only made a handful of commits.
     const commitRepos: CommitContrib[] = collection.commitContributionsByRepository ?? [];
-    const totalCommitsAcrossRepos =
-      commitRepos.reduce((s, r) => s + r.contributions.totalCount, 0) || 1;
+
+    const langCommits = new Map<
+      string,
+      { commits: number; repos: number; color: string | null }
+    >();
 
     let homeBase: {
       nameWithOwner: string;
@@ -158,12 +139,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } | null = null;
 
     let starsEarned = 0;
+    let ownedReposContributed = 0;
 
     for (const c of commitRepos) {
       const repo = c.repository;
       const commits = c.contributions.totalCount;
-      starsEarned += repo.stargazerCount ?? 0;
 
+      // Home base: most-committed repo regardless of ownership.
       if (!homeBase || commits > homeBase.commits) {
         homeBase = {
           nameWithOwner: repo.nameWithOwner,
@@ -174,34 +156,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
       }
 
-      // Skip repos with no language data (probably empty/private placeholders)
-      const totalRepoBytes = repo.languages.edges.reduce((s, e) => s + e.size, 0);
-      if (totalRepoBytes === 0) continue;
-
-      const commitShare = commits / totalCommitsAcrossRepos;
-      for (const edge of repo.languages.edges) {
-        const name = edge.node.name;
-        const attributedBytes = edge.size * commitShare;
-        const existing = langTotals.get(name) ?? {
-          bytes: 0,
-          repos: 0,
-          color: edge.node.color,
-        };
-        existing.bytes += attributedBytes;
-        existing.repos += 1;
-        if (!existing.color && edge.node.color) existing.color = edge.node.color;
-        langTotals.set(name, existing);
+      // Stars earned: only repos the user actually owns (and didn't fork).
+      const isOwn = repo.owner.login.toLowerCase() === username.toLowerCase();
+      if (isOwn && !repo.isFork) {
+        starsEarned += repo.stargazerCount ?? 0;
+        ownedReposContributed += 1;
       }
+
+      // Language attribution by commit count, primary language only.
+      // Skip repos with no primary language (empty / config-only repos).
+      if (!repo.primaryLanguage) continue;
+      const name = repo.primaryLanguage.name;
+      const existing = langCommits.get(name) ?? {
+        commits: 0,
+        repos: 0,
+        color: repo.primaryLanguage.color ?? null,
+      };
+      existing.commits += commits;
+      existing.repos += 1;
+      langCommits.set(name, existing);
     }
 
-    const languages = [...langTotals.entries()]
+    const languages = [...langCommits.entries()]
       .map(([language, v]) => ({
         language,
-        bytes: Math.round(v.bytes),
+        commits: v.commits,
         repoCount: v.repos,
         color: v.color,
       }))
-      .sort((a, b) => b.bytes - a.bytes)
+      .sort((a, b) => b.commits - a.commits)
       .slice(0, 12);
 
     const reposCreatedThisYear = collection.totalRepositoryContributions ?? 0;
@@ -227,6 +210,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       homeBase,
       reposCreatedThisYear,
       reposContributedTo,
+      ownedReposContributed,
       starsEarned,
       userCreatedAt: user.createdAt,
     });

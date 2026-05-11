@@ -14,15 +14,15 @@ interface BeamSegment {
 }
 
 function buildSegments(insights: Insights): BeamSegment[] {
-  const total = insights.languages.reduce((s, l) => s + l.bytes, 0);
+  const total = insights.languages.reduce((s, l) => s + l.commits, 0);
   if (total === 0) return [];
   const segs: BeamSegment[] = [];
   let other = 0;
   for (const l of insights.languages) {
-    const pct = l.bytes / total;
+    const pct = l.commits / total;
     const color = l.color ?? getLanguageColor(l.language);
     if (pct >= 0.02) segs.push({ language: l.language, pct, color });
-    else other += l.bytes;
+    else other += l.commits;
   }
   if (other / total >= 0.01) {
     segs.push({ language: "Other", pct: other / total, color: "#52525b" });
@@ -43,8 +43,8 @@ function MiniBeam({ insights }: { insights: Insights }) {
   return (
     <div>
       <div className="mb-3 flex items-center justify-between text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
-        <span>Languages this year</span>
-        <span>{segments.length} shown</span>
+        <span>Where your commits went</span>
+        <span>{segments.length} languages</span>
       </div>
       <div className="flex h-10 w-full overflow-hidden rounded-md">
         {segments.map((seg, i) => (
