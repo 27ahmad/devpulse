@@ -19,12 +19,8 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
   const startDate = new Date(dates[0]);
   const endDate = new Date(dates[dates.length - 1]);
 
-  // Calculate width to fit container without overflow
-  // rectSize(11) + space(3) = 14px per column, plus left padding for labels
-  const totalWidth = data.totalWeeks * 14 + 50;
-
   return (
-    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5 pr-7">
       <div className="mb-4 flex items-baseline justify-between">
         <span className="text-sm font-medium text-[var(--text)]">
           Contributions
@@ -33,21 +29,19 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
           {data.totalContributions.toLocaleString()} in the last year
         </span>
       </div>
-      <div className="overflow-hidden">
+      <div style={{ overflowX: "auto", overflowY: "hidden" }}>
         <HeatMap
           value={value}
           startDate={startDate}
           endDate={endDate}
-          width={totalWidth}
+          width={data.totalWeeks * 14 + 60}
           rectSize={11}
           legendCellSize={0}
           space={3}
           style={{
-            maxWidth: "100%",
             color: "var(--text-muted)",
             fontSize: 10,
           }}
-          weekLabels={["", "Mon", "", "Wed", "", "Fri", ""]}
           panelColors={{
             0: "var(--surface-2)",
             2: "#14532d",

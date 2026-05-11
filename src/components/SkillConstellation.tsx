@@ -167,8 +167,8 @@ function Star({
     if (glowRef.current) {
       const glowScale = isHovered ? scale * 5 : scale * 3.5;
       glowRef.current.scale.setScalar(glowScale);
-      // @ts-expect-error - accessing material opacity
-      glowRef.current.material.opacity = isHovered
+      const mat = glowRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = isHovered
         ? 0.12 + Math.sin(t * 3) * 0.03
         : 0.05;
     }
@@ -249,7 +249,6 @@ function Star({
         anchorY="bottom"
         outlineWidth={0.025}
         outlineColor="#000000"
-        font="https://fonts.gstatic.com/s/inter/v18/UcCo3FwrK3iLTcviYwY.woff2"
       >
         {language}
       </Text>
