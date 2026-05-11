@@ -1,4 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { Search, ArrowRight, User, BarChart3 } from "lucide-react";
 import { useGitHubUser } from "./hooks/useGitHubUser";
 import { useGitHubRepos } from "./hooks/useGitHubRepos";
 import { useGitHubEvents } from "./hooks/useGitHubEvents";
@@ -21,10 +23,12 @@ import { computeRPGStats } from "./utils/gamify";
 
 type Tab = "profile" | "analytics";
 
-function UsernameInput({
+function SearchInput({
   onSubmit,
+  size = "default",
 }: {
   onSubmit: (username: string) => void;
+  size?: "default" | "large";
 }) {
   const [input, setInput] = useState("");
 
@@ -37,27 +41,100 @@ function UsernameInput({
     [input, onSubmit]
   );
 
+  const isLarge = size === "large";
+
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className="relative w-full">
+      <Search
+        size={isLarge ? 18 : 14}
+        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+      />
       <input
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Enter a GitHub username..."
-        className="flex-1 rounded-lg border border-[#30363d] bg-[#0d1117] px-4 py-2 text-sm text-[#e6edf3] placeholder-[#484f58] outline-none transition-colors focus:border-[#58a6ff]"
+        placeholder="Search a GitHub username..."
+        className={`w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition-colors focus:border-[var(--accent)] ${isLarge ? "py-3.5 pl-11 pr-28 text-sm" : "py-2 pl-9 pr-20 text-xs"}`}
       />
       <button
         type="submit"
-        className="rounded-lg bg-[#238636] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2ea043]"
+        className={`absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 rounded-md bg-[var(--text)] font-medium text-[var(--bg)] transition-opacity hover:opacity-90 ${isLarge ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[11px]"}`}
       >
         Search
+        <ArrowRight size={12} />
       </button>
     </form>
   );
 }
 
+function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const els = containerRef.current.querySelectorAll("[data-animate]");
+    gsap.fromTo(
+      els,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power3.out" }
+    );
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="flex flex-col items-center px-4 py-24 text-center sm:py-32"
+    >
+      <div data-animate className="mb-6 rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]">
+        Developer intelligence, zero login required
+      </div>
+
+      <h1
+        data-animate
+        className="mb-4 text-4xl font-semibold tracking-tight text-[var(--text)] sm:text-5xl"
+      >
+        DevPulse
+      </h1>
+      <p
+        data-animate
+        className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-muted)] sm:text-base"
+      >
+        Language mastery, contribution streaks, velocity metrics, and your
+        developer character sheet — from any public GitHub profile.
+      </p>
+
+      <div data-animate className="mb-16 w-full max-w-md">
+        <SearchInput onSubmit={onSearch} size="large" />
+      </div>
+
+      <div data-animate className="grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
+        {[
+          { label: "Languages", desc: "Mastery index" },
+          { label: "Streaks", desc: "Timezone-aware" },
+          { label: "Velocity", desc: "DORA metrics" },
+          { label: "RPG Stats", desc: "Character sheet" },
+        ].map((f) => (
+          <div
+            key={f.label}
+            className="bg-[var(--surface)] p-4 text-center"
+          >
+            <div className="text-xs font-medium text-[var(--text)]">
+              {f.label}
+            </div>
+            <div className="mt-0.5 text-[10px] text-[var(--text-muted)]">
+              {f.desc}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({ username }: { username: string }) {
   const [activeTab, setActiveTab] = useState<Tab>("profile");
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const userQuery = useGitHubUser(username);
   const reposQuery = useGitHubRepos(username);
   const eventsQuery = useGitHubEvents(username);
@@ -79,108 +156,122 @@ function Dashboard({ username }: { username: string }) {
         )
       : null;
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "profile", label: "Profile" },
-    { key: "analytics", label: "Analytics" },
-  ];
+  const analyticsLoading = eventsQuery.isLoading || langQuery.isLoading;
 
-  const analyticsLoading =
-    eventsQuery.isLoading || langQuery.isLoading;
+  useEffect(() => {
+    if (!contentRef.current) return;
+    gsap.fromTo(
+      contentRef.current,
+      { opacity: 0, y: 8 },
+      { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
+    );
+  }, [activeTab]);
+
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: "profile", label: "Profile", icon: <User size={14} /> },
+    { key: "analytics", label: "Analytics", icon: <BarChart3 size={14} /> },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
-      <nav className="flex gap-1 border-b border-[#30363d]">
+      <nav className="flex gap-px rounded-md border border-[var(--border)] bg-[var(--border)] p-0">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-2 py-2 text-xs font-medium transition-colors first:rounded-l-[5px] last:rounded-r-[5px] ${
               activeTab === tab.key
-                ? "border-b-2 border-[#f78166] text-white"
-                : "text-[#7d8590] hover:text-white"
+                ? "bg-[var(--surface-2)] text-[var(--text)]"
+                : "bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
             }`}
           >
+            {tab.icon}
             {tab.label}
           </button>
         ))}
       </nav>
 
-      {activeTab === "profile" && (
-        <div className="flex flex-col gap-6">
-          <ErrorBoundary>
-            {userQuery.isLoading && <ProfileSkeleton />}
-            {userQuery.error && (
-              <div className="rounded-lg border border-[#f8514966] bg-[#f8514915] p-4 text-center text-sm text-[#f85149]">
-                {userQuery.error.message}
-              </div>
-            )}
-            {userQuery.data && <ProfileCard user={userQuery.data} />}
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <div>
-              <h3 className="mb-3 text-base font-semibold text-white">
-                Repositories
-              </h3>
-              {reposQuery.isLoading && <ReposSkeleton />}
-              {reposQuery.error && (
-                <div className="rounded-lg border border-[#f8514966] bg-[#f8514915] p-4 text-center text-sm text-[#f85149]">
-                  Failed to load repositories.
+      <div ref={contentRef} key={activeTab}>
+        {activeTab === "profile" && (
+          <div className="flex flex-col gap-6">
+            <ErrorBoundary>
+              {userQuery.isLoading && <ProfileSkeleton />}
+              {userQuery.error && (
+                <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
+                  {userQuery.error.message}
                 </div>
               )}
-              {reposQuery.data && <RepoList repos={reposQuery.data} />}
-            </div>
-          </ErrorBoundary>
-        </div>
-      )}
+              {userQuery.data && <ProfileCard user={userQuery.data} />}
+            </ErrorBoundary>
 
-      {activeTab === "analytics" && (
-        <div className="flex flex-col gap-6">
-          {analyticsLoading && <AnalyticsSkeleton />}
+            <ErrorBoundary>
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-sm font-medium text-[var(--text)]">
+                    Repositories
+                  </span>
+                  {reposQuery.data && (
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {reposQuery.data.length} repos
+                    </span>
+                  )}
+                </div>
+                {reposQuery.isLoading && <ReposSkeleton />}
+                {reposQuery.error && (
+                  <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
+                    Failed to load repositories.
+                  </div>
+                )}
+                {reposQuery.data && <RepoList repos={reposQuery.data} />}
+              </div>
+            </ErrorBoundary>
+          </div>
+        )}
 
-          {(eventsQuery.error || langQuery.error) && (
-            <div className="rounded-lg border border-[#f8514966] bg-[#f8514915] p-4 text-center text-sm text-[#f85149]">
-              Failed to load some analytics data.
-            </div>
-          )}
+        {activeTab === "analytics" && (
+          <div className="flex flex-col gap-3">
+            {analyticsLoading && <AnalyticsSkeleton />}
 
-          {!analyticsLoading && (
-            <>
-              {streak && (
-                <ErrorBoundary>
-                  <StreakCounter streak={streak} />
-                </ErrorBoundary>
-              )}
+            {(eventsQuery.error || langQuery.error) && (
+              <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
+                Failed to load some analytics data.
+              </div>
+            )}
 
-              {langQuery.data && (
-                <ErrorBoundary>
-                  <LanguageChart data={langQuery.data} />
-                </ErrorBoundary>
-              )}
-
-              {eventsQuery.data && (
-                <ErrorBoundary>
-                  <ActivityHeatmap
-                    dailyCommits={eventsQuery.data.dailyCommits}
-                  />
-                </ErrorBoundary>
-              )}
-
-              {eventsQuery.data && (
-                <ErrorBoundary>
-                  <DORAMetrics summary={eventsQuery.data} />
-                </ErrorBoundary>
-              )}
-
-              {rpgStats && (
-                <ErrorBoundary>
-                  <RPGStatSheet stats={rpgStats} />
-                </ErrorBoundary>
-              )}
-            </>
-          )}
-        </div>
-      )}
+            {!analyticsLoading && (
+              <>
+                {streak && (
+                  <ErrorBoundary>
+                    <StreakCounter streak={streak} />
+                  </ErrorBoundary>
+                )}
+                {langQuery.data && (
+                  <ErrorBoundary>
+                    <LanguageChart data={langQuery.data} />
+                  </ErrorBoundary>
+                )}
+                {eventsQuery.data && (
+                  <ErrorBoundary>
+                    <ActivityHeatmap
+                      dailyCommits={eventsQuery.data.dailyCommits}
+                    />
+                  </ErrorBoundary>
+                )}
+                {eventsQuery.data && (
+                  <ErrorBoundary>
+                    <DORAMetrics summary={eventsQuery.data} />
+                  </ErrorBoundary>
+                )}
+                {rpgStats && (
+                  <ErrorBoundary>
+                    <RPGStatSheet stats={rpgStats} />
+                  </ErrorBoundary>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -199,31 +290,39 @@ function App() {
   }, []);
 
   return (
-    <div className="mx-auto min-h-screen max-w-4xl px-4 py-8">
-      <header className="mb-8 flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-white">DevPulse</h1>
-          <span className="rounded-full bg-[#238636] px-2 py-0.5 text-xs font-medium text-white">
-            beta
-          </span>
-        </div>
-        <UsernameInput onSubmit={handleSearch} />
-      </header>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-3xl px-4 py-6">
+        {username && (
+          <header className="mb-8 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => {
+                  setUsername("");
+                  window.history.pushState(
+                    {},
+                    "",
+                    window.location.pathname
+                  );
+                }}
+                className="text-sm font-semibold text-[var(--text)] transition-opacity hover:opacity-70"
+              >
+                DevPulse
+              </button>
+              <span className="text-xs text-[var(--text-muted)]">
+                @{username}
+              </span>
+            </div>
+            <SearchInput onSubmit={handleSearch} />
+          </header>
+        )}
 
-      {!username && (
-        <div className="flex flex-col items-center gap-4 py-20 text-center">
-          <div className="text-4xl">&#128640;</div>
-          <h2 className="text-xl font-semibold text-white">
-            Developer Intelligence Dashboard
-          </h2>
-          <p className="max-w-md text-sm text-[#7d8590]">
-            Enter a GitHub username to explore their coding profile, language
-            mastery, contribution streaks, and velocity metrics.
-          </p>
-        </div>
-      )}
+        {!username && <HeroLanding onSearch={handleSearch} />}
+        {username && <Dashboard username={username} />}
 
-      {username && <Dashboard username={username} />}
+        <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
+          DevPulse &middot; Data from GitHub API
+        </footer>
+      </div>
     </div>
   );
 }

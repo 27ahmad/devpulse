@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         this.props.fallback ?? (
-          <div className="rounded-lg border border-[#30363d] bg-[#161b22] p-6 text-center text-[#7d8590]">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-6 text-center text-xs text-[var(--text-muted)]">
             Something went wrong loading this section.
           </div>
         )
