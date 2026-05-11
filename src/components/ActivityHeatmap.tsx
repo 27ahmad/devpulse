@@ -1,15 +1,12 @@
 import HeatMap from "@uiw/react-heat-map";
+import type { ContributionData } from "../hooks/useContributions";
 
-interface Props {
-  dailyCommits: Record<string, number>;
-}
-
-export function ActivityHeatmap({ dailyCommits }: Props) {
-  const entries = Object.entries(dailyCommits);
+export function ActivityHeatmap({ data }: { data: ContributionData }) {
+  const entries = Object.entries(data.dailyContributions);
   if (entries.length === 0) {
     return (
       <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--text-muted)]">
-        No activity data available.
+        No contribution data available.
       </div>
     );
   }
@@ -18,19 +15,16 @@ export function ActivityHeatmap({ dailyCommits }: Props) {
   const dates = entries.map(([d]) => d).sort();
   const startDate = new Date(dates[0]);
   const endDate = new Date(dates[dates.length - 1]);
-  const total = entries.reduce((sum, [, c]) => sum + c, 0);
 
   return (
     <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
       <div className="mb-4 flex items-baseline justify-between">
-        <div>
-          <div className="text-sm font-medium text-[var(--text)]">
-            Contributions
-          </div>
-          <div className="text-xs text-[var(--text-muted)]">
-            {total.toLocaleString()} in the last {dates.length} active days
-          </div>
-        </div>
+        <span className="text-sm font-medium text-[var(--text)]">
+          Contributions
+        </span>
+        <span className="text-xs text-[var(--text-muted)]">
+          {data.totalContributions.toLocaleString()} in the last year
+        </span>
       </div>
       <div className="overflow-x-auto">
         <HeatMap

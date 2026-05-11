@@ -3,14 +3,13 @@ import gsap from "gsap";
 import { Search, ArrowRight, User, BarChart3 } from "lucide-react";
 import { useGitHubUser } from "./hooks/useGitHubUser";
 import { useGitHubRepos } from "./hooks/useGitHubRepos";
-import { useGitHubEvents } from "./hooks/useGitHubEvents";
+import { useContributions } from "./hooks/useContributions";
 import { useLanguageMastery } from "./hooks/useLanguageMastery";
 import { ProfileCard } from "./components/ProfileCard";
 import { RepoList } from "./components/RepoList";
 import { LanguageChart } from "./components/LanguageChart";
-import { StreakCounter } from "./components/StreakCounter";
 import { ActivityHeatmap } from "./components/ActivityHeatmap";
-import { DORAMetrics } from "./components/DORAMetrics";
+import { CodingPatterns } from "./components/CodingPatterns";
 import { RPGStatSheet } from "./components/RPGStatSheet";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import {
@@ -18,7 +17,6 @@ import {
   ReposSkeleton,
   AnalyticsSkeleton,
 } from "./components/Skeleton";
-import { computeStreaks } from "./utils/streaks";
 import { computeRPGStats } from "./utils/gamify";
 
 type Tab = "profile" | "analytics";
@@ -85,7 +83,10 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
       ref={containerRef}
       className="flex flex-col items-center px-4 py-24 text-center sm:py-32"
     >
-      <div data-animate className="mb-6 rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]">
+      <div
+        data-animate
+        className="mb-6 rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]"
+      >
         Developer intelligence, zero login required
       </div>
 
@@ -99,25 +100,25 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
         data-animate
         className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-muted)] sm:text-base"
       >
-        Language mastery, contribution streaks, velocity metrics, and your
-        developer character sheet — from any public GitHub profile.
+        Language mastery, contribution patterns, and your developer character
+        sheet — from any public GitHub profile.
       </p>
 
       <div data-animate className="mb-16 w-full max-w-md">
         <SearchInput onSubmit={onSearch} size="large" />
       </div>
 
-      <div data-animate className="grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
+      <div
+        data-animate
+        className="grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4"
+      >
         {[
-          { label: "Languages", desc: "Mastery index" },
-          { label: "Streaks", desc: "Timezone-aware" },
-          { label: "Velocity", desc: "DORA metrics" },
+          { label: "Languages", desc: "Proportional breakdown" },
+          { label: "Patterns", desc: "Weekly & monthly" },
+          { label: "Heatmap", desc: "Full year data" },
           { label: "RPG Stats", desc: "Character sheet" },
         ].map((f) => (
-          <div
-            key={f.label}
-            className="bg-[var(--surface)] p-4 text-center"
-          >
+          <div key={f.label} className="bg-[var(--surface)] p-4 text-center">
             <div className="text-xs font-medium text-[var(--text)]">
               {f.label}
             </div>
@@ -137,26 +138,23 @@ function Dashboard({ username }: { username: string }) {
 
   const userQuery = useGitHubUser(username);
   const reposQuery = useGitHubRepos(username);
-  const eventsQuery = useGitHubEvents(username);
+  const contribQuery = useContributions(username);
   const langQuery = useLanguageMastery(reposQuery.data);
 
-  const timezoneOffset = new Date().getTimezoneOffset();
-
-  const streak = eventsQuery.data
-    ? computeStreaks(eventsQuery.data.dailyCommits, timezoneOffset)
-    : null;
-
   const rpgStats =
-    eventsQuery.data && langQuery.data && streak && userQuery.data
-      ? computeRPGStats(
-          eventsQuery.data.totalCommits,
-          langQuery.data[0]?.language ?? null,
-          streak.currentStreak,
-          userQuery.data.public_repos
-        )
+    contribQuery.data && langQuery.data && userQuery.data
+      ? computeRPGStats({
+          totalContributions: contribQuery.data.totalContributions,
+          commits: contribQuery.data.commits,
+          pullRequests: contribQuery.data.pullRequests,
+          reviews: contribQuery.data.reviews,
+          primaryLanguage: langQuery.data[0]?.language ?? null,
+          consistency: contribQuery.data.consistency,
+          repoCount: userQuery.data.public_repos,
+        })
       : null;
 
-  const analyticsLoading = eventsQuery.isLoading || langQuery.isLoading;
+  const analyticsLoading = contribQuery.isLoading || langQuery.isLoading;
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -232,39 +230,32 @@ function Dashboard({ username }: { username: string }) {
           <div className="flex flex-col gap-3">
             {analyticsLoading && <AnalyticsSkeleton />}
 
-            {(eventsQuery.error || langQuery.error) && (
+            {(contribQuery.error || langQuery.error) && (
               <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
-                Failed to load some analytics data.
+                {contribQuery.error?.message ?? "Failed to load analytics data."}
               </div>
             )}
 
             {!analyticsLoading && (
               <>
-                {streak && (
+                {rpgStats && (
                   <ErrorBoundary>
-                    <StreakCounter streak={streak} />
+                    <RPGStatSheet stats={rpgStats} />
+                  </ErrorBoundary>
+                )}
+                {contribQuery.data && (
+                  <ErrorBoundary>
+                    <CodingPatterns data={contribQuery.data} />
+                  </ErrorBoundary>
+                )}
+                {contribQuery.data && (
+                  <ErrorBoundary>
+                    <ActivityHeatmap data={contribQuery.data} />
                   </ErrorBoundary>
                 )}
                 {langQuery.data && (
                   <ErrorBoundary>
                     <LanguageChart data={langQuery.data} />
-                  </ErrorBoundary>
-                )}
-                {eventsQuery.data && (
-                  <ErrorBoundary>
-                    <ActivityHeatmap
-                      dailyCommits={eventsQuery.data.dailyCommits}
-                    />
-                  </ErrorBoundary>
-                )}
-                {eventsQuery.data && (
-                  <ErrorBoundary>
-                    <DORAMetrics summary={eventsQuery.data} />
-                  </ErrorBoundary>
-                )}
-                {rpgStats && (
-                  <ErrorBoundary>
-                    <RPGStatSheet stats={rpgStats} />
                   </ErrorBoundary>
                 )}
               </>
@@ -298,11 +289,7 @@ function App() {
               <button
                 onClick={() => {
                   setUsername("");
-                  window.history.pushState(
-                    {},
-                    "",
-                    window.location.pathname
-                  );
+                  window.history.pushState({}, "", window.location.pathname);
                 }}
                 className="text-sm font-semibold text-[var(--text)] transition-opacity hover:opacity-70"
               >

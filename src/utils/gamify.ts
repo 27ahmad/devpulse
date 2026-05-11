@@ -1,12 +1,16 @@
 export interface RPGStats {
   level: number;
   xp: number;
+  xpToNext: number;
   className: string;
   classEmoji: string;
-  stamina: number;
-  maxStamina: number;
-  guildContributions: number;
   title: string;
+  consistency: number;
+  repoCount: number;
+  contributions: number;
+  commits: number;
+  prs: number;
+  reviews: number;
 }
 
 const CLASS_MAP: Record<string, { name: string; emoji: string }> = {
@@ -27,10 +31,6 @@ const CLASS_MAP: Record<string, { name: string; emoji: string }> = {
   HTML: { name: "Markup Bard", emoji: "📜" },
   CSS: { name: "Style Enchanter", emoji: "🎨" },
   Dart: { name: "Flutter Dancer", emoji: "🦋" },
-  Lua: { name: "Moon Scribe", emoji: "🌙" },
-  Scala: { name: "Functional Sage", emoji: "📐" },
-  Vue: { name: "Reactive Druid", emoji: "🌿" },
-  Svelte: { name: "Compiled Mystic", emoji: "🔮" },
 };
 
 function getTitle(level: number): string {
@@ -42,15 +42,26 @@ function getTitle(level: number): string {
   return "Novice";
 }
 
-export function computeRPGStats(
-  totalCommits: number,
-  primaryLanguage: string | null,
-  currentStreak: number,
-  repoCount: number
-): RPGStats {
-  // Logarithmic XP curve, cap at level 100
-  const xp = totalCommits;
-  const level = Math.min(100, Math.floor(15 * Math.log2(totalCommits + 1)));
+export function computeRPGStats({
+  totalContributions,
+  commits,
+  pullRequests,
+  reviews,
+  primaryLanguage,
+  consistency,
+  repoCount,
+}: {
+  totalContributions: number;
+  commits: number;
+  pullRequests: number;
+  reviews: number;
+  primaryLanguage: string | null;
+  consistency: number;
+  repoCount: number;
+}): RPGStats {
+  const xp = totalContributions;
+  const level = Math.min(100, Math.floor(15 * Math.log2(totalContributions + 1)));
+  const xpToNext = Math.round(Math.pow(2, (level + 1) / 15) - 1);
 
   const classInfo =
     (primaryLanguage ? CLASS_MAP[primaryLanguage] : null) ?? {
@@ -58,17 +69,18 @@ export function computeRPGStats(
       emoji: "🧭",
     };
 
-  const maxStamina = 30;
-  const stamina = Math.min(currentStreak, maxStamina);
-
   return {
     level,
     xp,
+    xpToNext,
     className: classInfo.name,
     classEmoji: classInfo.emoji,
-    stamina,
-    maxStamina,
-    guildContributions: repoCount,
     title: getTitle(level),
+    consistency,
+    repoCount,
+    contributions: totalContributions,
+    commits,
+    prs: pullRequests,
+    reviews,
   };
 }

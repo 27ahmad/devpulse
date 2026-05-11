@@ -7,28 +7,6 @@ function formatBytes(bytes: number): string {
   return `${bytes}B`;
 }
 
-function LanguageBar({ stat, maxMastery }: { stat: LanguageStat; maxMastery: number }) {
-  const pct = (stat.mastery / maxMastery) * 100;
-  const color = getLanguageColor(stat.language);
-
-  return (
-    <div className="group flex items-center gap-3">
-      <span className="w-20 shrink-0 text-right text-xs text-[var(--text-secondary)]">
-        {stat.language}
-      </span>
-      <div className="relative h-5 flex-1 overflow-hidden rounded-sm bg-[var(--surface-2)]">
-        <div
-          className="h-full rounded-sm transition-all duration-700 ease-out"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-      <span className="hidden w-28 text-xs text-[var(--text-muted)] group-hover:inline sm:inline">
-        {formatBytes(stat.bytes)} / {stat.repoCount} repos
-      </span>
-    </div>
-  );
-}
-
 export function LanguageChart({ data }: { data: LanguageStat[] }) {
   if (data.length === 0) {
     return (
@@ -38,20 +16,56 @@ export function LanguageChart({ data }: { data: LanguageStat[] }) {
     );
   }
 
-  const maxMastery = data[0]?.mastery ?? 1;
+  const totalBytes = data.reduce((sum, d) => sum + d.bytes, 0);
 
   return (
     <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
-      <div className="mb-1 text-sm font-medium text-[var(--text)]">
-        Language Mastery
+      <div className="mb-5 text-sm font-medium text-[var(--text)]">
+        Languages
       </div>
-      <p className="mb-5 text-xs text-[var(--text-muted)]">
-        Weighted by code volume and project diversity
-      </p>
-      <div className="flex flex-col gap-2.5">
-        {data.map((stat) => (
-          <LanguageBar key={stat.language} stat={stat} maxMastery={maxMastery} />
-        ))}
+
+      {/* Stacked bar */}
+      <div className="mb-4 flex h-2 overflow-hidden rounded-full">
+        {data.map((stat) => {
+          const pct = (stat.bytes / totalBytes) * 100;
+          if (pct < 0.5) return null;
+          return (
+            <div
+              key={stat.language}
+              style={{
+                width: `${pct}%`,
+                backgroundColor: getLanguageColor(stat.language),
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 sm:grid-cols-3">
+        {data.map((stat) => {
+          const pct = ((stat.bytes / totalBytes) * 100).toFixed(1);
+          return (
+            <div key={stat.language} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{ backgroundColor: getLanguageColor(stat.language) }}
+                />
+                <span className="text-xs text-[var(--text-secondary)]">
+                  {stat.language}
+                </span>
+              </div>
+              <span className="text-xs tabular-nums text-[var(--text-muted)]">
+                {pct}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 border-t border-[var(--border-subtle)] pt-3 text-[10px] text-[var(--text-muted)]">
+        {formatBytes(totalBytes)} across {data.reduce((s, d) => s + d.repoCount, 0)} repositories
       </div>
     </div>
   );
