@@ -14,6 +14,7 @@ import { OverviewStats } from "./components/OverviewStats";
 import { TopProjects } from "./components/TopProjects";
 import { RPGStatSheet } from "./components/RPGStatSheet";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { DNAHelix } from "./components/DNAHelix";
 import {
   ProfileSkeleton,
   ReposSkeleton,
@@ -254,6 +255,13 @@ function Dashboard({ username }: { username: string }) {
                 {rpgStats && (
                   <ErrorBoundary>
                     <RPGStatSheet stats={rpgStats} />
+                  </ErrorBoundary>
+                )}
+
+                {/* Engineering DNA */}
+                {contribQuery.data && (
+                  <ErrorBoundary>
+                    <DNAHelix data={contribQuery.data} />
                   </ErrorBoundary>
                 )}
 
