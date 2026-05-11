@@ -14,11 +14,17 @@ export interface GitHubRepo {
 }
 
 async function fetchRepos(username: string): Promise<GitHubRepo[]> {
-  const res = await fetch(
-    `/api/github?path=users/${encodeURIComponent(username)}/repos&sort=updated&per_page=30&type=owner`
-  );
-  if (!res.ok) throw new Error("Failed to fetch repos");
-  return res.json();
+  const allRepos: GitHubRepo[] = [];
+  for (let page = 1; page <= 10; page++) {
+    const res = await fetch(
+      `/api/github?path=users/${encodeURIComponent(username)}/repos&sort=updated&per_page=100&type=owner&page=${page}`
+    );
+    if (!res.ok) throw new Error("Failed to fetch repos");
+    const repos: GitHubRepo[] = await res.json();
+    allRepos.push(...repos);
+    if (repos.length < 100) break;
+  }
+  return allRepos;
 }
 
 export function useGitHubRepos(username: string) {
