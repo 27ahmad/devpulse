@@ -43,7 +43,7 @@ export function SceneShell({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`absolute inset-0 flex flex-col items-center justify-center px-8 text-center ${className}`}
+      className={`absolute inset-0 flex flex-col items-center justify-center px-5 text-center sm:px-8 ${className}`}
     >
       {children}
     </motion.div>

@@ -138,7 +138,7 @@ export function CodingPatterns({ data }: { data: ContributionData }) {
   const bestDay = data.dayOfWeekTotals.indexOf(Math.max(...data.dayOfWeekTotals));
 
   return (
-    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-4 sm:p-5">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-sm font-medium text-[var(--text)]">
           Coding Patterns
@@ -151,7 +151,7 @@ export function CodingPatterns({ data }: { data: ContributionData }) {
       </p>
 
       {/* Stats row */}
-      <div className="mb-6 grid grid-cols-4 gap-3">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div>
           <div className="text-lg font-semibold tabular-nums text-[var(--text)]">
             {data.totalContributions.toLocaleString()}

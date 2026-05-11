@@ -29,7 +29,7 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
-        className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 p-8 sm:p-10"
+        className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 p-5 sm:rounded-3xl sm:p-10"
         style={{
           background: `linear-gradient(140deg, ${palette.deep}, #0a0a12 60%)`,
           boxShadow: `0 30px 100px ${palette.primary}33`,
@@ -47,7 +47,7 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
         </div>
 
         <h2
-          className="relative mt-10 text-left text-5xl font-semibold leading-tight sm:text-6xl"
+          className="relative mt-8 text-left text-4xl font-semibold leading-tight sm:mt-10 sm:text-6xl"
           style={{
             background: `linear-gradient(135deg, ${palette.accent}, ${palette.primary})`,
             WebkitBackgroundClip: "text",
@@ -61,7 +61,7 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
           {insights.archetype.tagline}
         </p>
 
-        <div className="relative mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="relative mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:gap-4 sm:grid-cols-4">
           <Stat label="Contributions" value={insights.totalContributions.toLocaleString()} />
           <Stat label="Active days" value={insights.activeDays.toLocaleString()} />
           <Stat label="Languages" value={insights.languagesUsedCount.toString()} />

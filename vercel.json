@@ -1,5 +1,10 @@
 {
   "rewrites": [
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "user" }],
+      "destination": "/api/render"
+    },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/" }
   ]

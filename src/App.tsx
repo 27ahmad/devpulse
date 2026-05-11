@@ -68,7 +68,7 @@ function SearchInput({
     <form onSubmit={handleSubmit} className="relative w-full">
       <Search
         size={isLarge ? 18 : 14}
-        className="absolute left-3.5 top-[18px] -translate-y-1/2 text-[var(--text-muted)]"
+        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
       />
       <input
         type="text"
@@ -82,7 +82,7 @@ function SearchInput({
       />
       <button
         type="submit"
-        className={`absolute right-1.5 top-[18px] -translate-y-1/2 flex items-center gap-1.5 rounded-md bg-[var(--text)] font-medium text-[var(--bg)] transition-opacity hover:opacity-90 ${isLarge ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[11px]"}`}
+        className={`absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 rounded-md bg-[var(--text)] font-medium text-[var(--bg)] transition-opacity hover:opacity-90 ${isLarge ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[11px]"}`}
       >
         Search
         <ArrowRight size={12} />
@@ -160,12 +160,12 @@ function IdentityBanner({
       transition={{ duration: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
       className="relative overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)]"
     >
-      <div className="relative p-6">
-        <div className="flex items-start gap-5">
+      <div className="relative p-4 sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-5">
           <img
             src={user.avatar_url}
             alt={user.login}
-            className="h-16 w-16 rounded-xl ring-1 ring-white/10"
+            className="h-12 w-12 shrink-0 rounded-xl ring-1 ring-white/10 sm:h-16 sm:w-16"
           />
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-semibold text-[var(--text)]">
@@ -466,7 +466,7 @@ function App() {
   return (
     <div className="min-h-screen">
       {!username && (
-        <div className="mx-auto max-w-3xl px-4 py-6">
+        <div className="mx-auto max-w-3xl px-4 py-4 sm:py-6">
           <HeroLanding onSearch={handleSearch} />
           <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
             DevPulse &middot; Data from GitHub API
@@ -479,7 +479,7 @@ function App() {
       )}
 
       {username && view === "dashboard" && (
-        <div className="mx-auto max-w-6xl px-6 py-6">
+        <div className="mx-auto max-w-6xl px-3 py-4 sm:px-6 sm:py-6">
           <header className="mb-8 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <button

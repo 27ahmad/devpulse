@@ -1,5 +1,6 @@
 import { ImageResponse } from "@vercel/og";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+
+export const config = { runtime: "edge" };
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 const GITHUB_REST = "https://api.github.com";
@@ -163,22 +164,19 @@ function lighten(hex: string): { primary: string; accent: string; deep: string }
   return { primary: hex, accent: hex, deep: "#0a0a12" };
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const usernameParam = req.query.user;
-  const username =
-    typeof usernameParam === "string" ? usernameParam : null;
+export default async function handler(req: Request) {
+  const url = new URL(req.url);
+  const username = url.searchParams.get("user");
 
   if (!username || !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(username)) {
-    res.status(400).send("Missing or invalid `user` parameter");
-    return;
+    return new Response("Missing or invalid `user` parameter", { status: 400 });
   }
 
   let snap: Snapshot;
   try {
     snap = await fetchSnapshot(username);
   } catch {
-    res.status(502).send("Failed to render card");
-    return;
+    return new Response("Failed to render card", { status: 502 });
   }
 
   const baseColor = snap.primaryLanguage
@@ -287,14 +285,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         </div>
       </div>
     ),
-    { width: 1200, height: 630 }
+    {
+      width: 1200,
+      height: 630,
+      headers: {
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    }
   );
-
-  const buffer = Buffer.from(await image.arrayBuffer());
-  res.setHeader("content-type", "image/png");
-  res.setHeader(
-    "cache-control",
-    "public, s-maxage=3600, stale-while-revalidate=86400"
-  );
-  res.status(200).send(buffer);
+  return image;
 }

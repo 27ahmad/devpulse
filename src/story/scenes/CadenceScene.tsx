@@ -18,12 +18,12 @@ export function CadenceScene({ ctx }: { ctx: SceneContext }) {
       >
         Your rhythm
       </motion.div>
-      <div className="mt-10 flex items-end justify-center gap-3 sm:gap-5" style={{ height: 240 }}>
+      <div className="mt-10 flex items-end justify-center gap-2 sm:gap-5" style={{ height: 240 }}>
         {contributions.dayOfWeekTotals.map((v, i) => {
           const pct = (v / max) * 100;
           const isPeak = i === insights.peakDayIndex;
           return (
-            <div key={i} className="flex w-12 flex-col items-center gap-3 sm:w-16">
+            <div key={i} className="flex w-9 flex-col items-center gap-3 sm:w-16">
               <div className="relative flex h-[200px] w-full items-end">
                 <motion.div
                   initial={{ height: 0 }}
