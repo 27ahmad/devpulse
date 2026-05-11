@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../utils/fetchApi";
 
 export interface ContributionData {
   totalContributions: number;
@@ -15,14 +16,9 @@ export interface ContributionData {
 }
 
 async function fetchContributions(username: string): Promise<ContributionData> {
-  const res = await fetch(
+  return fetchJson<ContributionData>(
     `/api/graphql?username=${encodeURIComponent(username)}`
   );
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error ?? "Failed to fetch contributions");
-  }
-  return res.json();
 }
 
 export function useContributions(username: string) {

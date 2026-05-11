@@ -60,20 +60,20 @@ function DayOfWeekChart({ totals }: { totals: number[] }) {
 
 function MonthlyTrend({ monthlyTotals }: { monthlyTotals: Record<string, number> }) {
   const months = Object.entries(monthlyTotals).sort(([a], [b]) => a.localeCompare(b));
-  if (months.length < 2) return null;
-
-  const maxVal = Math.max(...months.map(([, v]) => v), 1);
   const barsRef = useRef<HTMLDivElement>(null);
+  const maxVal = Math.max(...months.map(([, v]) => v), 1);
 
   useEffect(() => {
-    if (!barsRef.current) return;
+    if (!barsRef.current || months.length < 2) return;
     const bars = barsRef.current.querySelectorAll("[data-bar]");
     gsap.fromTo(
       bars,
       { scaleY: 0 },
       { scaleY: 1, duration: 0.5, stagger: 0.03, ease: "power2.out", delay: 0.2 }
     );
-  }, []);
+  }, [months.length]);
+
+  if (months.length < 2) return null;
 
   const current = months[months.length - 1]?.[1] ?? 0;
   const previous = months[months.length - 2]?.[1] ?? 0;

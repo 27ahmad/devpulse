@@ -1,73 +1,53 @@
-# React + TypeScript + Vite
+# DevPulse
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+GitHub Wrapped, but cooler. Drop a username, get a 60-second cinematic story of any developer's year, then a deep-dive dashboard. Generated share cards unfurl on Twitter and LinkedIn.
 
-Currently, two official plugins are available:
+## How it works
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Story mode** — 12 full-screen scenes, kinetic typography, palette derived from the user's primary language. Total contributions, heatmap reveal, streak, weekday cadence, best month, language constellation, collaboration split, and an archetype reveal as the climax.
+- **Dashboard mode** — the analytical view with an `InsightsPanel` (archetype + four signals), 3D skill constellation, contribution heatmap, weekly cadence, monthly trend, top projects.
+- **Share cards** — `/api/og?user=<name>` returns a 1200×630 PNG. Edge middleware rewrites OG meta tags on the root route per user, so links unfurl with the user's archetype.
 
-## React Compiler
+## Insight definitions
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Signal | Definition |
+|---|---|
+| `specializationPct` | bytes of #1 language / total bytes |
+| `languageDiversity` | Shannon entropy across languages with ≥ 1% share |
+| `weekdayWeekendRatio` | sum(Mon–Fri) / sum(Sat–Sun) commits |
+| `collabShare` | (PRs + reviews) / totalContributions |
+| `velocity` | totalContributions / activeDays |
+| `consistency` | weeks with any activity / total weeks (server-computed) |
+| `archetype` | derived label: Specialist, Polyglot, Collaborator, Solo Builder, Maintainer, Sprinter, Marathoner, Weekend Hacker, Quiet Year |
 
-## Expanding the ESLint configuration
+All signals come from a single year of GitHub data (`contributionsCollection` covers ~365 days).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- React 19 + TypeScript + Vite
+- TailwindCSS 4
+- React Query for client data fetching with edge-cached proxies
+- Three.js + React Three Fiber (lazily chunked)
+- Framer Motion for story choreography
+- Vercel serverless (`api/graphql.ts`, `api/github.ts`), Vercel Edge (`api/og.tsx`, `middleware.ts`)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Setup
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+cp .env.example .env  # add GITHUB_PAT for higher rate limits on REST + GraphQL
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The `GITHUB_PAT` should be a fine-grained personal access token with no scopes — it just bypasses unauthenticated rate limits for public reads.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- `npm run dev` — Vite dev server
+- `npm run build` — production build (typecheck + bundle)
+- `npm run lint` — ESLint
+- `npm run preview` — preview the production build
+
+## Deployment
+
+Pushes to main deploy on Vercel. `api/*` and `middleware.ts` are wired automatically. `GITHUB_PAT` must be set in Vercel project env vars.

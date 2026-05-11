@@ -17,6 +17,7 @@ export function computeStreaks(
   let longestStreak = 0;
   let currentStreak = 0;
   let prevDate: Date | null = null;
+  let lastActiveDateStr: string | null = null;
 
   for (const dateStr of dates) {
     if (dailyCommits[dateStr] === 0) continue;
@@ -37,18 +38,19 @@ export function computeStreaks(
 
     longestStreak = Math.max(longestStreak, currentStreak);
     prevDate = date;
+    lastActiveDateStr = dateStr;
   }
 
-  // Check if current streak is still active (last activity today or yesterday)
-  if (prevDate) {
-    const lastDateStr = dates[dates.length - 1];
+  if (lastActiveDateStr) {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
-    if (lastDateStr !== todayStr && lastDateStr !== yesterdayStr) {
+    if (lastActiveDateStr !== todayStr && lastActiveDateStr !== yesterdayStr) {
       currentStreak = 0;
     }
+  } else {
+    currentStreak = 0;
   }
 
   return { currentStreak, longestStreak };

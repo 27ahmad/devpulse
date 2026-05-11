@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../utils/fetchApi";
 
 export interface GitHubRepo {
   id: number;
@@ -16,12 +17,10 @@ export interface GitHubRepo {
 
 async function fetchRepos(username: string): Promise<GitHubRepo[]> {
   const allRepos: GitHubRepo[] = [];
-  for (let page = 1; page <= 10; page++) {
-    const res = await fetch(
+  for (let page = 1; page <= 2; page++) {
+    const repos = await fetchJson<GitHubRepo[]>(
       `/api/github?path=users/${encodeURIComponent(username)}/repos&sort=updated&per_page=100&type=owner&page=${page}`
     );
-    if (!res.ok) throw new Error("Failed to fetch repos");
-    const repos: GitHubRepo[] = await res.json();
     allRepos.push(...repos);
     if (repos.length < 100) break;
   }

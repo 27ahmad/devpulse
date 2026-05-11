@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchJson } from "../utils/fetchApi";
 
 export interface GitHubUser {
   login: string;
@@ -14,13 +15,9 @@ export interface GitHubUser {
 }
 
 async function fetchUser(username: string): Promise<GitHubUser> {
-  const res = await fetch(
+  return fetchJson<GitHubUser>(
     `/api/github?path=users/${encodeURIComponent(username)}`
   );
-  if (!res.ok) {
-    throw new Error(res.status === 404 ? "User not found" : "Failed to fetch user");
-  }
-  return res.json();
 }
 
 export function useGitHubUser(username: string) {

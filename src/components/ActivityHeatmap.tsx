@@ -12,7 +12,7 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
   }
 
   const value = entries
-    .filter(([_, count]) => count > 0)
+    .filter(([, count]) => count > 0)
     .map(([date, count]) => ({ date: date.replace(/-/g, "/"), count }));
 
   const dates = entries.map(([d]) => d.replace(/-/g, "/")).sort();

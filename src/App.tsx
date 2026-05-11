@@ -1,15 +1,15 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import gsap from "gsap";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { motion } from "framer-motion";
 import {
   Search,
   ArrowRight,
-  GitCommit,
-  GitPullRequest,
-  Eye,
-  FolderGit2,
   MapPin,
   Calendar,
   ExternalLink,
+  Copy,
+  Download,
+  Check,
+  Play,
 } from "lucide-react";
 import { useGitHubUser } from "./hooks/useGitHubUser";
 import { useGitHubRepos } from "./hooks/useGitHubRepos";
@@ -18,16 +18,23 @@ import { useLanguageMastery } from "./hooks/useLanguageMastery";
 import { ActivityHeatmap } from "./components/ActivityHeatmap";
 import { CodingPatterns } from "./components/CodingPatterns";
 import { TopProjects } from "./components/TopProjects";
-import { SkillConstellation } from "./components/SkillConstellation";
 import { StreakCounter } from "./components/StreakCounter";
-import { computeStreaks } from "./utils/streaks";
+import { InsightsPanel } from "./components/InsightsPanel";
+import { computeInsights } from "./utils/insights";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import {
-  ProfileSkeleton,
-  AnalyticsSkeleton,
-} from "./components/Skeleton";
-import { computeRPGStats, type RPGStats } from "./utils/gamify";
+import { ProfileSkeleton, AnalyticsSkeleton } from "./components/Skeleton";
+import { StoryPlayer } from "./story/StoryPlayer";
+import { ApiError } from "./utils/fetchApi";
 import type { GitHubUser } from "./hooks/useGitHubUser";
+import type { Insights } from "./utils/insights";
+
+const SkillConstellation = lazy(() =>
+  import("./components/SkillConstellation").then((m) => ({
+    default: m.SkillConstellation,
+  }))
+);
+
+const USERNAME_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
 
 /* ─── Search Input ─── */
 function SearchInput({
@@ -38,12 +45,19 @@ function SearchInput({
   size?: "default" | "large";
 }) {
   const [input, setInput] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       const trimmed = input.trim();
-      if (trimmed) onSubmit(trimmed);
+      if (!trimmed) return;
+      if (!USERNAME_RE.test(trimmed)) {
+        setError("That doesn't look like a GitHub username.");
+        return;
+      }
+      setError(null);
+      onSubmit(trimmed);
     },
     [input, onSubmit]
   );
@@ -54,79 +68,65 @@ function SearchInput({
     <form onSubmit={handleSubmit} className="relative w-full">
       <Search
         size={isLarge ? 18 : 14}
-        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+        className="absolute left-3.5 top-[18px] -translate-y-1/2 text-[var(--text-muted)]"
       />
       <input
         type="text"
         value={input}
-        onChange={(e) => setInput(e.target.value)}
+        onChange={(e) => {
+          setInput(e.target.value);
+          if (error) setError(null);
+        }}
         placeholder="Search a GitHub username..."
         className={`w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition-colors focus:border-[var(--accent)] ${isLarge ? "py-3.5 pl-11 pr-28 text-sm" : "py-2 pl-9 pr-20 text-xs"}`}
       />
       <button
         type="submit"
-        className={`absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 rounded-md bg-[var(--text)] font-medium text-[var(--bg)] transition-opacity hover:opacity-90 ${isLarge ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[11px]"}`}
+        className={`absolute right-1.5 top-[18px] -translate-y-1/2 flex items-center gap-1.5 rounded-md bg-[var(--text)] font-medium text-[var(--bg)] transition-opacity hover:opacity-90 ${isLarge ? "px-4 py-2 text-xs" : "px-3 py-1.5 text-[11px]"}`}
       >
         Search
         <ArrowRight size={12} />
       </button>
+      {error && (
+        <div className="absolute left-0 right-0 top-full mt-2 text-center text-[11px] text-[var(--red)]">
+          {error}
+        </div>
+      )}
     </form>
   );
 }
 
 /* ─── Hero Landing ─── */
 function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const els = containerRef.current.querySelectorAll("[data-animate]");
-    gsap.fromTo(
-      els,
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: "power3.out" }
-    );
-  }, []);
-
   return (
-    <div
-      ref={containerRef}
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
       className="flex flex-col items-center px-4 py-24 text-center sm:py-32"
     >
-      <div
-        data-animate
-        className="mb-6 rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]"
-      >
-        Developer intelligence, zero login required
+      <div className="mb-6 rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]">
+        GitHub Wrapped, but cooler
       </div>
 
-      <h1
-        data-animate
-        className="mb-4 text-4xl font-semibold tracking-tight text-[var(--text)] sm:text-5xl"
-      >
+      <h1 className="mb-4 text-4xl font-semibold tracking-tight text-[var(--text)] sm:text-6xl">
         DevPulse
       </h1>
-      <p
-        data-animate
-        className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-muted)] sm:text-base"
-      >
-        Language mastery, contribution patterns, and your developer character
-        sheet — from any public GitHub profile.
+      <p className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-muted)] sm:text-base">
+        Drop a GitHub username. Get a 60-second cinematic year-in-code, then a
+        deep-dive dashboard.
       </p>
 
-      <div data-animate className="mb-16 w-full max-w-md">
+      <div className="mb-16 w-full max-w-md">
         <SearchInput onSubmit={onSearch} size="large" />
       </div>
 
-      <div
-        data-animate
-        className="grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4"
-      >
+      <div className="grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
         {[
-          { label: "Languages", desc: "3D constellation" },
-          { label: "Patterns", desc: "Weekly & monthly" },
+          { label: "Story", desc: "12 cinematic scenes" },
+          { label: "Insights", desc: "Real signals" },
           { label: "Heatmap", desc: "Full year data" },
-          { label: "RPG Stats", desc: "Character sheet" },
+          { label: "Shareable", desc: "Generated cards" },
         ].map((f) => (
           <div key={f.label} className="bg-[var(--surface)] p-4 text-center">
             <div className="text-xs font-medium text-[var(--text)]">
@@ -138,65 +138,29 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
           </div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-/* ─── XP Bar ─── */
-function XPBar({ value, max }: { value: number; max: number }) {
-  const barRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!barRef.current) return;
-    const pct = Math.min((value / max) * 100, 100);
-    gsap.fromTo(
-      barRef.current,
-      { width: "0%" },
-      { width: `${pct}%`, duration: 1.2, ease: "power2.out", delay: 0.3 }
-    );
-  }, [value, max]);
-
-  return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#1a1a2e]">
-      <div
-        ref={barRef}
-        className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--purple)]"
-      />
-    </div>
-  );
-}
-
-/* ─── Identity Banner: user info + RPG stats merged ─── */
+/* ─── Identity Banner ─── */
 function IdentityBanner({
   user,
-  rpgStats,
+  insights,
 }: {
   user: GitHubUser;
-  rpgStats: RPGStats | null;
+  insights: Insights | null;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!cardRef.current) return;
-    gsap.fromTo(
-      cardRef.current,
-      { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-    );
-  }, []);
-
   const joinYear = new Date(user.created_at).getFullYear();
   const yearsActive = new Date().getFullYear() - joinYear;
 
   return (
-    <div
-      ref={cardRef}
-      className="relative overflow-hidden rounded-xl border border-[var(--purple)]/15 bg-[var(--surface)]"
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.2, 0.7, 0.2, 1] }}
+      className="relative overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)]"
     >
-      {/* Gradient accents */}
-      <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-[var(--purple)]/5 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 h-32 w-32 rounded-full bg-[var(--accent)]/5 blur-3xl" />
-
       <div className="relative p-6">
-        {/* Top row: avatar + identity + class badge */}
         <div className="flex items-start gap-5">
           <img
             src={user.avatar_url}
@@ -204,197 +168,129 @@ function IdentityBanner({
             className="h-16 w-16 rounded-xl ring-1 ring-white/10"
           />
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-[var(--text)]">
-                  {user.name ?? user.login}
-                </h2>
-                <a
-                  href={user.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
-                >
-                  @{user.login}
-                  <ExternalLink size={10} />
-                </a>
-              </div>
-              {rpgStats && (
-                <span className="rounded border border-[var(--purple)]/20 bg-[var(--purple)]/5 px-2.5 py-1 text-xs font-medium text-[var(--purple)]">
-                  {rpgStats.title}
+            <h2 className="text-lg font-semibold text-[var(--text)]">
+              {user.name ?? user.login}
+            </h2>
+            <a
+              href={user.html_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+            >
+              @{user.login}
+              <ExternalLink size={10} />
+            </a>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
+              {user.bio && (
+                <span className="basis-full text-[var(--text-secondary)]">
+                  {user.bio}
                 </span>
               )}
+              {user.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={11} />
+                  {user.location}
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <Calendar size={11} />
+                {yearsActive}y on GitHub
+              </span>
+              <span>
+                <strong className="font-medium text-[var(--text)]">
+                  {user.followers.toLocaleString()}
+                </strong>{" "}
+                followers
+              </span>
+              <span>
+                <strong className="font-medium text-[var(--text)]">
+                  {user.public_repos.toLocaleString()}
+                </strong>{" "}
+                repos
+              </span>
             </div>
-
-            {/* RPG class + XP */}
-            {rpgStats && (
-              <div className="mt-3 flex items-center gap-3">
-                <span className="text-lg">{rpgStats.classEmoji}</span>
-                <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold text-[var(--text)]">
-                      Level {rpgStats.level}
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {rpgStats.className}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="w-24">
-                      <XPBar value={rpgStats.xp} max={rpgStats.xpToNext} />
-                    </div>
-                    <span className="text-[10px] tabular-nums text-[var(--text-muted)]">
-                      {rpgStats.xp.toLocaleString()} /{" "}
-                      {rpgStats.xpToNext.toLocaleString()} XP
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Meta row */}
-        <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-[var(--text-muted)]">
-          {user.bio && (
-            <span className="basis-full text-[var(--text-secondary)]">
-              {user.bio}
-            </span>
-          )}
-          {user.location && (
-            <span className="flex items-center gap-1.5">
-              <MapPin size={11} />
-              {user.location}
-            </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <Calendar size={11} />
-            {yearsActive}y on GitHub
-          </span>
-          <span>
-            <strong className="font-medium text-[var(--text)]">
-              {user.followers.toLocaleString()}
-            </strong>{" "}
-            followers
-          </span>
-          <span>
-            <strong className="font-medium text-[var(--text)]">
-              {user.following.toLocaleString()}
-            </strong>{" "}
-            following
-          </span>
-        </div>
-
-        {/* Divider */}
-        <div className="my-5 h-px bg-[var(--border-subtle)]" />
-
-        {/* Stats grid */}
-        {rpgStats && (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-            {[
-              {
-                icon: <GitCommit size={13} />,
-                value: rpgStats.commits,
-                label: "Commits",
-              },
-              {
-                icon: <GitPullRequest size={13} />,
-                value: rpgStats.prs,
-                label: "Pull requests",
-              },
-              {
-                icon: <Eye size={13} />,
-                value: rpgStats.reviews,
-                label: "Reviews",
-              },
-              {
-                icon: <FolderGit2 size={13} />,
-                value: rpgStats.repoCount,
-                label: "Repositories",
-              },
-              {
-                icon: null,
-                value: rpgStats.consistency,
-                label: "Consistency",
-                suffix: "%",
-                highlight: true,
-              },
-            ].map((stat) => (
-              <div key={stat.label} className="flex items-center gap-2.5">
-                {stat.icon && (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/5 text-[var(--text-muted)]">
-                    {stat.icon}
-                  </div>
-                )}
-                {!stat.icon && (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--green)]/10">
-                    <div className="h-2 w-2 rounded-full bg-[var(--green)]" />
-                  </div>
-                )}
-                <div>
-                  <span
-                    className={`text-sm font-semibold tabular-nums ${stat.highlight ? "text-[var(--green)]" : "text-[var(--text)]"}`}
-                  >
-                    {stat.value.toLocaleString()}
-                    {stat.suffix ?? ""}
-                  </span>
-                  <div className="text-[10px] text-[var(--text-muted)]">
-                    {stat.label}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
+
+      {insights && <InsightsPanel insights={insights} />}
+    </motion.div>
+  );
+}
+
+/* ─── Share Bar (Deep Dive header) ─── */
+function ShareBar({ username, onReplay }: { username: string; onReplay: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={onReplay}
+        className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface-2)]"
+      >
+        <Play size={11} />
+        Replay story
+      </button>
+      <button
+        onClick={handleCopy}
+        className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+      >
+        {copied ? <Check size={11} /> : <Copy size={11} />}
+        {copied ? "Copied" : "Share"}
+      </button>
+      <a
+        href={`/api/og?user=${encodeURIComponent(username)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
+      >
+        <Download size={11} />
+        Card
+      </a>
     </div>
   );
 }
 
 /* ─── Dashboard: single scrollable page ─── */
-function Dashboard({ username }: { username: string }) {
-  const contentRef = useRef<HTMLDivElement>(null);
-
+function Dashboard({ username, onReplay }: { username: string; onReplay: () => void }) {
   const userQuery = useGitHubUser(username);
   const reposQuery = useGitHubRepos(username);
   const contribQuery = useContributions(username);
   const langQuery = useLanguageMastery(reposQuery.data);
 
-  const rpgStats =
+  const insights =
     contribQuery.data && langQuery.data && userQuery.data
-      ? computeRPGStats({
-          totalContributions: contribQuery.data.totalContributions,
-          commits: contribQuery.data.commits,
-          pullRequests: contribQuery.data.pullRequests,
-          reviews: contribQuery.data.reviews,
-          primaryLanguage: langQuery.data[0]?.language ?? null,
-          consistency: contribQuery.data.consistency,
-          repoCount: userQuery.data.public_repos,
+      ? computeInsights({
+          user: userQuery.data,
+          contributions: contribQuery.data,
+          languages: langQuery.data,
         })
       : null;
 
   const isLoading =
     userQuery.isLoading || contribQuery.isLoading || langQuery.isLoading;
 
-  useEffect(() => {
-    if (!contentRef.current) return;
-    gsap.fromTo(
-      contentRef.current,
-      { opacity: 0, y: 8 },
-      { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
-    );
-  }, [username]);
+  const errorMessage =
+    (userQuery.error as ApiError | undefined)?.message ??
+    (contribQuery.error as ApiError | undefined)?.message ??
+    null;
 
   return (
-    <div ref={contentRef} className="flex flex-col gap-4">
-      {/* Error */}
-      {userQuery.error && (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-end">
+        <ShareBar username={username} onReplay={onReplay} />
+      </div>
+
+      {errorMessage && (
         <div className="rounded-lg border border-[var(--red)]/20 bg-[var(--red)]/5 p-4 text-center text-sm text-[var(--red)]">
-          {userQuery.error.message}
+          {errorMessage}
         </div>
       )}
 
-      {/* Loading */}
       {isLoading && (
         <>
           <ProfileSkeleton />
@@ -402,47 +298,49 @@ function Dashboard({ username }: { username: string }) {
         </>
       )}
 
-      {/* Identity Banner */}
       {userQuery.data && (
         <ErrorBoundary>
-          <IdentityBanner user={userQuery.data} rpgStats={rpgStats} />
+          <IdentityBanner user={userQuery.data} insights={insights} />
         </ErrorBoundary>
       )}
 
-      {/* Skill Constellation */}
       {langQuery.data && (
         <ErrorBoundary>
-          <SkillConstellation data={langQuery.data} />
+          <Suspense
+            fallback={
+              <div className="flex h-[400px] items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-muted)]">
+                Loading constellation…
+              </div>
+            }
+          >
+            <SkillConstellation data={langQuery.data} />
+          </Suspense>
         </ErrorBoundary>
       )}
 
-      {/* Streaks */}
-      {contribQuery.data && (
+      {contribQuery.data && insights && (
         <ErrorBoundary>
           <StreakCounter
-            streak={computeStreaks(
-              contribQuery.data.dailyContributions,
-              new Date().getTimezoneOffset()
-            )}
+            streak={{
+              currentStreak: insights.currentStreak,
+              longestStreak: insights.longestStreak,
+            }}
           />
         </ErrorBoundary>
       )}
 
-      {/* Contribution Heatmap */}
       {contribQuery.data && (
         <ErrorBoundary>
           <ActivityHeatmap data={contribQuery.data} />
         </ErrorBoundary>
       )}
 
-      {/* Coding Patterns */}
       {contribQuery.data && (
         <ErrorBoundary>
           <CodingPatterns data={contribQuery.data} />
         </ErrorBoundary>
       )}
 
-      {/* Top Projects */}
       {reposQuery.data && (
         <ErrorBoundary>
           <TopProjects repos={reposQuery.data} />
@@ -452,18 +350,117 @@ function Dashboard({ username }: { username: string }) {
   );
 }
 
+/* ─── Story gate: fetches data, hands off to player ─── */
+function StoryGate({ username, onExit }: { username: string; onExit: () => void }) {
+  const userQuery = useGitHubUser(username);
+  const reposQuery = useGitHubRepos(username);
+  const contribQuery = useContributions(username);
+  const langQuery = useLanguageMastery(reposQuery.data);
+
+  const ready =
+    userQuery.data && contribQuery.data && langQuery.data;
+
+  const error =
+    (userQuery.error as ApiError | undefined) ??
+    (contribQuery.error as ApiError | undefined);
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6 text-center">
+        <div className="mb-4 text-2xl font-semibold text-white">
+          {error.message}
+        </div>
+        <button
+          onClick={onExit}
+          className="rounded-full border border-white/20 bg-white/5 px-5 py-2 text-sm text-white/90"
+        >
+          Back
+        </button>
+      </div>
+    );
+  }
+
+  if (!ready) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+        <motion.div
+          className="h-12 w-12 rounded-full border-2 border-white/20 border-t-white"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+        />
+        <div className="mt-6 text-sm uppercase tracking-[0.3em] text-white/50">
+          Composing @{username}'s year
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <StoryPlayer
+      user={userQuery.data!}
+      contributions={contribQuery.data!}
+      languages={langQuery.data!}
+      onExit={onExit}
+    />
+  );
+}
+
 /* ─── App ─── */
 function App() {
   const [username, setUsername] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("user") ?? "";
   });
+  const [view, setView] = useState<"story" | "dashboard">(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("view") === "dashboard" ? "dashboard" : "story";
+  });
 
-  const handleSearch = useCallback((newUsername: string) => {
-    setUsername(newUsername);
+  const updateUrl = useCallback((u: string, v: "story" | "dashboard") => {
     const url = new URL(window.location.href);
-    url.searchParams.set("user", newUsername);
+    if (u) url.searchParams.set("user", u);
+    else url.searchParams.delete("user");
+    if (v === "dashboard") url.searchParams.set("view", "dashboard");
+    else url.searchParams.delete("view");
     window.history.pushState({}, "", url.toString());
+  }, []);
+
+  const handleSearch = useCallback(
+    (newUsername: string) => {
+      const trimmed = newUsername.trim();
+      if (!USERNAME_RE.test(trimmed)) return;
+      setUsername(trimmed);
+      setView("story");
+      updateUrl(trimmed, "story");
+    },
+    [updateUrl]
+  );
+
+  const handleExitStory = useCallback(() => {
+    setView("dashboard");
+    updateUrl(username, "dashboard");
+  }, [username, updateUrl]);
+
+  const handleReplay = useCallback(() => {
+    setView("story");
+    updateUrl(username, "story");
+  }, [username, updateUrl]);
+
+  const handleHome = useCallback(() => {
+    setUsername("");
+    setView("story");
+    window.history.pushState({}, "", window.location.pathname);
+  }, []);
+
+  // Sync on back/forward
+  useEffect(() => {
+    const onPop = () => {
+      const params = new URLSearchParams(window.location.search);
+      setUsername(params.get("user") ?? "");
+      setView(params.get("view") === "dashboard" ? "dashboard" : "story");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   return (
@@ -477,15 +474,16 @@ function App() {
         </div>
       )}
 
-      {username && (
+      {username && view === "story" && (
+        <StoryGate username={username} onExit={handleExitStory} />
+      )}
+
+      {username && view === "dashboard" && (
         <div className="mx-auto max-w-6xl px-6 py-6">
           <header className="mb-8 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <button
-                onClick={() => {
-                  setUsername("");
-                  window.history.pushState({}, "", window.location.pathname);
-                }}
+                onClick={handleHome}
                 className="text-sm font-semibold text-[var(--text)] transition-opacity hover:opacity-70"
               >
                 DevPulse
@@ -497,7 +495,7 @@ function App() {
             <SearchInput onSubmit={handleSearch} />
           </header>
 
-          <Dashboard username={username} />
+          <Dashboard username={username} onReplay={handleReplay} />
 
           <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
             DevPulse &middot; Data from GitHub API
