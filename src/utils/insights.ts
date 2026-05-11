@@ -1,6 +1,5 @@
-import type { ContributionData } from "../hooks/useContributions";
-import type { LanguageStat } from "../hooks/useLanguageMastery";
-import type { GitHubUser } from "../hooks/useGitHubUser";
+import type { ContributionData, HomeBase, LanguageStat } from "../hooks/useContributions";
+import type { GitHubUser } from "./../hooks/useGitHubUser";
 import { computeStreaks } from "./streaks";
 
 export type ArchetypeName =
@@ -35,6 +34,7 @@ export interface Insights {
   languageDiversity: number;
   languagesUsedCount: number;
   primaryLanguage: string | null;
+  languages: LanguageStat[];
 
   weekdayWeekendRatio: number;
   peakDay: string;
@@ -46,6 +46,14 @@ export interface Insights {
 
   currentStreak: number;
   longestStreak: number;
+
+  firstActiveDate: string | null;
+  lastActiveDate: string | null;
+  homeBase: HomeBase | null;
+  reposCreatedThisYear: number;
+  reposContributedTo: number;
+  starsEarned: number;
+  yearsOnGitHub: number;
 
   archetype: Archetype;
 }
@@ -64,7 +72,9 @@ function shannonEntropy(shares: number[]): number {
   return h;
 }
 
-function deriveArchetype(i: Omit<Insights, "archetype">): Archetype {
+function deriveArchetype(
+  i: Omit<Insights, "archetype">
+): Archetype {
   if (i.totalContributions < 30) {
     return {
       name: "Quiet Year",
@@ -128,7 +138,6 @@ function deriveArchetype(i: Omit<Insights, "archetype">): Archetype {
     };
   }
 
-  // Fallback: pick whichever of specialization / collaboration / cadence is strongest.
   if (i.specializationPct >= 0.5 && i.primaryLanguage) {
     return {
       name: "Specialist",
@@ -144,14 +153,13 @@ function deriveArchetype(i: Omit<Insights, "archetype">): Archetype {
 export function computeInsights(args: {
   user: GitHubUser;
   contributions: ContributionData;
-  languages: LanguageStat[];
 }): Insights {
-  const { contributions: c, languages } = args;
+  const { contributions: c } = args;
+  const languages = c.languages;
 
   const activeDays = Object.values(c.dailyContributions).filter((v) => v > 0).length;
   const velocity = activeDays > 0 ? c.totalContributions / activeDays : 0;
 
-  // recency30 — sum of last 30 calendar days
   const sortedDates = Object.keys(c.dailyContributions).sort();
   const recencyWindow = sortedDates.slice(-30);
   const recency30 = recencyWindow.reduce(
@@ -161,9 +169,8 @@ export function computeInsights(args: {
 
   const totalBytes = languages.reduce((s, l) => s + l.bytes, 0);
   const primaryLanguage = languages[0]?.language ?? null;
-  const specializationPct = totalBytes > 0 && languages[0]
-    ? languages[0].bytes / totalBytes
-    : 0;
+  const specializationPct =
+    totalBytes > 0 && languages[0] ? languages[0].bytes / totalBytes : 0;
 
   const significant = languages.filter((l) =>
     totalBytes > 0 ? l.bytes / totalBytes >= 0.01 : false
@@ -172,13 +179,10 @@ export function computeInsights(args: {
   const languageDiversity = shannonEntropy(shares);
 
   const weekdaySum =
-    c.dayOfWeekTotals[1] +
-    c.dayOfWeekTotals[2] +
-    c.dayOfWeekTotals[3] +
-    c.dayOfWeekTotals[4] +
-    c.dayOfWeekTotals[5];
+    c.dayOfWeekTotals[1] + c.dayOfWeekTotals[2] + c.dayOfWeekTotals[3] + c.dayOfWeekTotals[4] + c.dayOfWeekTotals[5];
   const weekendSum = c.dayOfWeekTotals[0] + c.dayOfWeekTotals[6];
-  const weekdayWeekendRatio = weekendSum > 0 ? weekdaySum / weekendSum : weekdaySum > 0 ? 99 : 0;
+  const weekdayWeekendRatio =
+    weekendSum > 0 ? weekdaySum / weekendSum : weekdaySum > 0 ? 99 : 0;
 
   const peakDayIndex = c.dayOfWeekTotals.indexOf(Math.max(...c.dayOfWeekTotals));
   const peakDay = DAY_NAMES[peakDayIndex] ?? "Monday";
@@ -198,6 +202,11 @@ export function computeInsights(args: {
 
   const streaks = computeStreaks(c.dailyContributions, new Date().getTimezoneOffset());
 
+  const yearsOnGitHub = Math.max(
+    0,
+    new Date().getFullYear() - new Date(c.userCreatedAt).getFullYear()
+  );
+
   const base = {
     totalContributions: c.totalContributions,
     commits: c.commits,
@@ -212,6 +221,7 @@ export function computeInsights(args: {
     languageDiversity,
     languagesUsedCount: significant.length,
     primaryLanguage,
+    languages,
     weekdayWeekendRatio,
     peakDay,
     peakDayIndex,
@@ -219,6 +229,13 @@ export function computeInsights(args: {
     bestMonth,
     currentStreak: streaks.currentStreak,
     longestStreak: streaks.longestStreak,
+    firstActiveDate: c.firstActiveDate,
+    lastActiveDate: c.lastActiveDate,
+    homeBase: c.homeBase,
+    reposCreatedThisYear: c.reposCreatedThisYear,
+    reposContributedTo: c.reposContributedTo,
+    starsEarned: c.starsEarned,
+    yearsOnGitHub,
   };
 
   return { ...base, archetype: deriveArchetype(base) };

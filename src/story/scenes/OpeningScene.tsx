@@ -2,8 +2,17 @@ import { motion } from "framer-motion";
 import type { SceneContext } from "../types";
 import { SceneShell } from "./sceneShared";
 
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export function OpeningScene({ ctx }: { ctx: SceneContext }) {
-  const { user, palette } = ctx;
+  const { user, palette, insights } = ctx;
+  const first = insights.firstActiveDate;
+  const last = insights.lastActiveDate;
+  const showRange = !!(first && last);
+
   return (
     <SceneShell>
       <motion.img
@@ -31,6 +40,16 @@ export function OpeningScene({ ctx }: { ctx: SceneContext }) {
       >
         @{user.login}
       </motion.div>
+      {showRange && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.6 }}
+          transition={{ delay: 1.4, duration: 0.7 }}
+          className="mt-4 text-xs uppercase tracking-[0.3em] text-white/60"
+        >
+          {formatDate(first!)} → {formatDate(last!)}
+        </motion.div>
+      )}
     </SceneShell>
   );
 }

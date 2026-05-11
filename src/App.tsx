@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -7,14 +7,13 @@ import {
   Calendar,
   ExternalLink,
   Copy,
-  Download,
   Check,
   Play,
+  Lock,
 } from "lucide-react";
 import { useGitHubUser } from "./hooks/useGitHubUser";
 import { useGitHubRepos } from "./hooks/useGitHubRepos";
 import { useContributions } from "./hooks/useContributions";
-import { useLanguageMastery } from "./hooks/useLanguageMastery";
 import { ActivityHeatmap } from "./components/ActivityHeatmap";
 import { CodingPatterns } from "./components/CodingPatterns";
 import { TopProjects } from "./components/TopProjects";
@@ -27,12 +26,6 @@ import { StoryPlayer } from "./story/StoryPlayer";
 import { ApiError } from "./utils/fetchApi";
 import type { GitHubUser } from "./hooks/useGitHubUser";
 import type { Insights } from "./utils/insights";
-
-const SkillConstellation = lazy(() =>
-  import("./components/SkillConstellation").then((m) => ({
-    default: m.SkillConstellation,
-  }))
-);
 
 const USERNAME_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
 
@@ -68,7 +61,7 @@ function SearchInput({
     <form onSubmit={handleSubmit} className="relative w-full">
       <Search
         size={isLarge ? 18 : 14}
-        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
       />
       <input
         type="text"
@@ -78,6 +71,8 @@ function SearchInput({
           if (error) setError(null);
         }}
         placeholder="Search a GitHub username..."
+        autoComplete="off"
+        spellCheck={false}
         className={`w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder-[var(--text-muted)] outline-none transition-colors focus:border-[var(--accent)] ${isLarge ? "py-3.5 pl-11 pr-28 text-sm" : "py-2 pl-9 pr-20 text-xs"}`}
       />
       <button
@@ -103,30 +98,77 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
-      className="flex flex-col items-center px-4 py-24 text-center sm:py-32"
+      className="relative flex flex-col items-center px-4 py-20 text-center sm:py-32"
     >
-      <div className="mb-6 rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--text-muted)]">
-        GitHub Wrapped, but cooler
+      {/* Ambient blob backdrop */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div
+          className="absolute -left-32 top-10 h-72 w-72 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, #6366f155, transparent 70%)" }}
+        />
+        <div
+          className="absolute -right-32 top-40 h-80 w-80 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, #a78bfa44, transparent 70%)" }}
+        />
       </div>
 
-      <h1 className="mb-4 text-4xl font-semibold tracking-tight text-[var(--text)] sm:text-6xl">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.6 }}
+        className="mb-7 rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-1 text-[11px] font-medium text-[var(--text-muted)] backdrop-blur"
+      >
+        GitHub Wrapped, but cooler
+      </motion.div>
+
+      <motion.h1
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.7 }}
+        className="mb-4 bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-5xl font-semibold tracking-tight text-transparent sm:text-7xl"
+      >
         DevPulse
-      </h1>
-      <p className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-muted)] sm:text-base">
+      </motion.h1>
+      <motion.p
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.6 }}
+        className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-muted)] sm:text-base"
+      >
         Drop a GitHub username. Get a 60-second cinematic year-in-code, then a
         deep-dive dashboard.
-      </p>
+      </motion.p>
 
-      <div className="mb-16 w-full max-w-md">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+        className="w-full max-w-md"
+      >
         <SearchInput onSubmit={onSearch} size="large" />
-      </div>
+      </motion.div>
 
-      <div className="grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.6 }}
+        className="mt-5 flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]/70"
+      >
+        <Lock size={10} />
+        Public GitHub data only. Private contributions aren't included.
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7, duration: 0.6 }}
+        className="mt-16 grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4"
+      >
         {[
-          { label: "Story", desc: "12 cinematic scenes" },
+          { label: "Story", desc: "11 scenes" },
           { label: "Insights", desc: "Real signals" },
-          { label: "Heatmap", desc: "Full year data" },
-          { label: "Shareable", desc: "Generated cards" },
+          { label: "Heatmap", desc: "Full year" },
+          { label: "Shareable", desc: "Personal cards" },
         ].map((f) => (
           <div key={f.label} className="bg-[var(--surface)] p-4 text-center">
             <div className="text-xs font-medium text-[var(--text)]">
@@ -137,7 +179,7 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
             </div>
           </div>
         ))}
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
@@ -168,7 +210,7 @@ function IdentityBanner({
             className="h-12 w-12 shrink-0 rounded-xl ring-1 ring-white/10 sm:h-16 sm:w-16"
           />
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold text-[var(--text)]">
+            <h2 className="text-lg font-semibold text-[var(--text)] sm:text-xl">
               {user.name ?? user.login}
             </h2>
             <a
@@ -218,8 +260,8 @@ function IdentityBanner({
   );
 }
 
-/* ─── Share Bar (Deep Dive header) ─── */
-function ShareBar({ username, onReplay }: { username: string; onReplay: () => void }) {
+/* ─── Share Bar ─── */
+function ShareBar({ onReplay }: { onReplay: () => void }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     await navigator.clipboard.writeText(window.location.href);
@@ -240,39 +282,27 @@ function ShareBar({ username, onReplay }: { username: string; onReplay: () => vo
         className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
       >
         {copied ? <Check size={11} /> : <Copy size={11} />}
-        {copied ? "Copied" : "Share"}
+        {copied ? "Copied" : "Share link"}
       </button>
-      <a
-        href={`/api/og?user=${encodeURIComponent(username)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
-      >
-        <Download size={11} />
-        Card
-      </a>
     </div>
   );
 }
 
-/* ─── Dashboard: single scrollable page ─── */
+/* ─── Dashboard ─── */
 function Dashboard({ username, onReplay }: { username: string; onReplay: () => void }) {
   const userQuery = useGitHubUser(username);
   const reposQuery = useGitHubRepos(username);
   const contribQuery = useContributions(username);
-  const langQuery = useLanguageMastery(reposQuery.data);
 
   const insights =
-    contribQuery.data && langQuery.data && userQuery.data
+    contribQuery.data && userQuery.data
       ? computeInsights({
           user: userQuery.data,
           contributions: contribQuery.data,
-          languages: langQuery.data,
         })
       : null;
 
-  const isLoading =
-    userQuery.isLoading || contribQuery.isLoading || langQuery.isLoading;
+  const isLoading = userQuery.isLoading || contribQuery.isLoading;
 
   const errorMessage =
     (userQuery.error as ApiError | undefined)?.message ??
@@ -282,7 +312,7 @@ function Dashboard({ username, onReplay }: { username: string; onReplay: () => v
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-end">
-        <ShareBar username={username} onReplay={onReplay} />
+        <ShareBar onReplay={onReplay} />
       </div>
 
       {errorMessage && (
@@ -301,20 +331,6 @@ function Dashboard({ username, onReplay }: { username: string; onReplay: () => v
       {userQuery.data && (
         <ErrorBoundary>
           <IdentityBanner user={userQuery.data} insights={insights} />
-        </ErrorBoundary>
-      )}
-
-      {langQuery.data && (
-        <ErrorBoundary>
-          <Suspense
-            fallback={
-              <div className="flex h-[400px] items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] text-xs text-[var(--text-muted)]">
-                Loading constellation…
-              </div>
-            }
-          >
-            <SkillConstellation data={langQuery.data} />
-          </Suspense>
         </ErrorBoundary>
       )}
 
@@ -350,15 +366,12 @@ function Dashboard({ username, onReplay }: { username: string; onReplay: () => v
   );
 }
 
-/* ─── Story gate: fetches data, hands off to player ─── */
+/* ─── Story gate ─── */
 function StoryGate({ username, onExit }: { username: string; onExit: () => void }) {
   const userQuery = useGitHubUser(username);
-  const reposQuery = useGitHubRepos(username);
   const contribQuery = useContributions(username);
-  const langQuery = useLanguageMastery(reposQuery.data);
 
-  const ready =
-    userQuery.data && contribQuery.data && langQuery.data;
+  const ready = userQuery.data && contribQuery.data;
 
   const error =
     (userQuery.error as ApiError | undefined) ??
@@ -399,7 +412,6 @@ function StoryGate({ username, onExit }: { username: string; onExit: () => void 
     <StoryPlayer
       user={userQuery.data!}
       contributions={contribQuery.data!}
-      languages={langQuery.data!}
       onExit={onExit}
     />
   );
@@ -452,7 +464,6 @@ function App() {
     window.history.pushState({}, "", window.location.pathname);
   }, []);
 
-  // Sync on back/forward
   useEffect(() => {
     const onPop = () => {
       const params = new URLSearchParams(window.location.search);
@@ -468,8 +479,8 @@ function App() {
       {!username && (
         <div className="mx-auto max-w-3xl px-4 py-4 sm:py-6">
           <HeroLanding onSearch={handleSearch} />
-          <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
-            DevPulse &middot; Data from GitHub API
+          <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/50">
+            DevPulse · Public GitHub data
           </footer>
         </div>
       )}
@@ -480,7 +491,7 @@ function App() {
 
       {username && view === "dashboard" && (
         <div className="mx-auto max-w-6xl px-3 py-4 sm:px-6 sm:py-6">
-          <header className="mb-8 flex flex-col gap-4">
+          <header className="mb-6 flex flex-col gap-4 sm:mb-8">
             <div className="flex items-center justify-between">
               <button
                 onClick={handleHome}
@@ -497,8 +508,8 @@ function App() {
 
           <Dashboard username={username} onReplay={handleReplay} />
 
-          <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
-            DevPulse &middot; Data from GitHub API
+          <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/50">
+            DevPulse · Public GitHub data only · Private contributions aren't included
           </footer>
         </div>
       )}

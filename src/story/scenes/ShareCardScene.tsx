@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Copy, Download, ArrowRight, Check } from "lucide-react";
+import { Copy, ArrowRight, Check, Lock } from "lucide-react";
 import { useState } from "react";
 import type { SceneContext } from "../types";
 import { SceneShell } from "./sceneShared";
@@ -13,10 +13,8 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
   const { user, insights, palette } = ctx;
   const [copied, setCopied] = useState(false);
 
-  const shareUrl =
-    typeof window !== "undefined" ? window.location.href : "";
-
   const handleCopy = async () => {
+    const shareUrl = window.location.href;
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -35,13 +33,25 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
           boxShadow: `0 30px 100px ${palette.primary}33`,
         }}
       >
-        <div className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full" style={{ background: palette.primary, opacity: 0.18, filter: "blur(80px)" }} />
-        <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full" style={{ background: palette.accent, opacity: 0.15, filter: "blur(80px)" }} />
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full"
+          style={{ background: palette.primary, opacity: 0.18, filter: "blur(80px)" }}
+        />
+        <div
+          className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full"
+          style={{ background: palette.accent, opacity: 0.15, filter: "blur(80px)" }}
+        />
 
         <div className="relative flex items-center gap-4">
-          <img src={user.avatar_url} alt={user.login} className="h-14 w-14 rounded-full ring-1 ring-white/10" />
+          <img
+            src={user.avatar_url}
+            alt={user.login}
+            className="h-14 w-14 rounded-full ring-1 ring-white/10"
+          />
           <div className="text-left">
-            <div className="text-xs uppercase tracking-[0.3em] text-white/50">DevPulse · {new Date().getFullYear()}</div>
+            <div className="text-xs uppercase tracking-[0.3em] text-white/50">
+              DevPulse · {new Date().getFullYear()}
+            </div>
             <div className="text-lg font-semibold text-white">@{user.login}</div>
           </div>
         </div>
@@ -65,7 +75,12 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
           <Stat label="Contributions" value={insights.totalContributions.toLocaleString()} />
           <Stat label="Active days" value={insights.activeDays.toLocaleString()} />
           <Stat label="Languages" value={insights.languagesUsedCount.toString()} />
-          <Stat label="Longest streak" value={`${insights.longestStreak}d`} />
+          <Stat label="Stars earned" value={insights.starsEarned.toLocaleString()} />
+        </div>
+
+        <div className="relative mt-6 flex items-center gap-1.5 text-[10px] text-white/35">
+          <Lock size={9} />
+          Public GitHub data only.
         </div>
       </motion.div>
 
@@ -80,18 +95,8 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
           className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/90 backdrop-blur transition-colors hover:bg-white/10"
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
-          {copied ? "Copied!" : "Copy link"}
+          {copied ? "Copied!" : "Copy share link"}
         </button>
-        <a
-          href={`/api/og?user=${encodeURIComponent(user.login)}`}
-          download={`devpulse-${user.login}.png`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/90 backdrop-blur transition-colors hover:bg-white/10"
-        >
-          <Download size={14} />
-          Download card
-        </a>
         <button
           onClick={onDeepDive}
           className="flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-black"
@@ -109,7 +114,9 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-left">
       <div className="text-xl font-semibold tabular-nums text-white">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-widest text-white/50">{label}</div>
+      <div className="mt-0.5 text-[10px] uppercase tracking-widest text-white/50">
+        {label}
+      </div>
     </div>
   );
 }

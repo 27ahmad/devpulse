@@ -1,6 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchJson } from "../utils/fetchApi";
 
+export interface LanguageStat {
+  language: string;
+  bytes: number;
+  repoCount: number;
+  color: string | null;
+}
+
+export interface HomeBase {
+  nameWithOwner: string;
+  url: string;
+  commits: number;
+  primaryLanguage: string | null;
+  primaryLanguageColor: string | null;
+}
+
 export interface ContributionData {
   totalContributions: number;
   commits: number;
@@ -13,6 +28,15 @@ export interface ContributionData {
   consistency: number;
   totalWeeks: number;
   weeksWithActivity: number;
+
+  firstActiveDate: string | null;
+  lastActiveDate: string | null;
+  languages: LanguageStat[];
+  homeBase: HomeBase | null;
+  reposCreatedThisYear: number;
+  reposContributedTo: number;
+  starsEarned: number;
+  userCreatedAt: string;
 }
 
 async function fetchContributions(username: string): Promise<ContributionData> {

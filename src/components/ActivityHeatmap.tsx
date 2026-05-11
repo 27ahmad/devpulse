@@ -35,51 +35,48 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
         </span>
       </div>
 
-      {/* Horizontal scroll wrapper for mobile; collapses to fit on wider screens */}
-      <div className="-mx-2 overflow-x-auto px-2 [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[var(--border)]">
-        <div style={{ minWidth: svgWidth }}>
-          <HeatMap
-            value={value}
-            startDate={startDate}
-            endDate={endDate}
-            width={svgWidth}
-            rectSize={rectSize}
-            legendCellSize={0}
-            space={space}
-            style={{
-              width: "100%",
-              color: "var(--text-muted)",
-              fontSize: 10,
-            }}
-            panelColors={{
-              0: "var(--surface-2)",
-              2: "#14532d",
-              4: "#166534",
-              8: "#15803d",
-              12: "#22c55e",
-            }}
-            rectProps={{ rx: 3 }}
-          />
+      {/* Horizontal scroller with themed scrollbar + right-edge fade */}
+      <div className="dp-fade-right -mx-2 sm:mx-0">
+        <div className="dp-scroll overflow-x-auto px-2 pb-2 sm:px-0">
+          <div style={{ minWidth: svgWidth }}>
+            <HeatMap
+              value={value}
+              startDate={startDate}
+              endDate={endDate}
+              width={svgWidth}
+              rectSize={rectSize}
+              legendCellSize={0}
+              space={space}
+              style={{
+                width: "100%",
+                color: "var(--text-muted)",
+                fontSize: 10,
+              }}
+              panelColors={{
+                0: "var(--surface-2)",
+                2: "#14532d",
+                4: "#166534",
+                8: "#15803d",
+                12: "#22c55e",
+              }}
+              rectProps={{ rx: 3 }}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[10px] text-[var(--text-muted)] sm:mt-4 sm:justify-end">
-        <span className="sm:hidden text-[10px] text-[var(--text-muted)]/70">
-          Scroll to see the full year →
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <span>Less</span>
-          {["var(--surface-2)", "#14532d", "#166534", "#15803d", "#22c55e"].map(
-            (c) => (
-              <span
-                key={c}
-                className="inline-block h-[11px] w-[11px] rounded-sm"
-                style={{ backgroundColor: c }}
-              />
-            )
-          )}
-          <span>More</span>
-        </div>
+      <div className="mt-3 flex items-center justify-end gap-2 text-[10px] text-[var(--text-muted)] sm:mt-4">
+        <span>Less</span>
+        {["var(--surface-2)", "#14532d", "#166534", "#15803d", "#22c55e"].map(
+          (c) => (
+            <span
+              key={c}
+              className="inline-block h-[11px] w-[11px] rounded-sm"
+              style={{ backgroundColor: c }}
+            />
+          )
+        )}
+        <span>More</span>
       </div>
     </div>
   );

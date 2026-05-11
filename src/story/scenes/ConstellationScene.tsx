@@ -17,23 +17,20 @@ function formatBytes(bytes: number): string {
 }
 
 export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
-  const { languages, palette, insights } = ctx;
+  const { insights, palette } = ctx;
+  const languages = insights.languages;
 
   const totalBytes = languages.reduce((s, l) => s + l.bytes, 0);
   if (totalBytes === 0 || languages.length === 0) return null;
 
-  // Roll up the tail so the beam stays legible. Anything < 2% goes into "Other".
+  // Roll the tail into "Other" so the bar stays legible
   const significant: Segment[] = [];
   let other = 0;
   for (const l of languages) {
     const pct = l.bytes / totalBytes;
+    const color = l.color ?? getLanguageColor(l.language);
     if (pct >= 0.02) {
-      significant.push({
-        language: l.language,
-        pct,
-        color: getLanguageColor(l.language),
-        bytes: l.bytes,
-      });
+      significant.push({ language: l.language, pct, color, bytes: l.bytes });
     } else {
       other += l.bytes;
     }
@@ -67,14 +64,13 @@ export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
         transition={{ delay: 0.2, duration: 0.7 }}
         className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
       >
-        <CountUp value={insights.languagesUsedCount} duration={1.2} /> languages,
+        <CountUp value={insights.languagesUsedCount} duration={1.2} /> languages
         <br />
         <span className="text-white/60 font-normal">
-          {formatBytes(totalBytes)} of code.
+          {formatBytes(totalBytes)} of code this year.
         </span>
       </motion.div>
 
-      {/* The Beam */}
       <div className="mt-12 w-full max-w-[1100px] px-4">
         <motion.div
           initial={{ scaleY: 0.15, opacity: 0 }}
@@ -83,7 +79,6 @@ export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
           style={{ transformOrigin: "center" }}
           className="relative flex h-24 w-full overflow-hidden rounded-xl sm:h-40 sm:rounded-2xl"
         >
-          {/* Backdrop sheen */}
           <div
             className="absolute inset-0"
             style={{
@@ -110,24 +105,18 @@ export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
                     : `inset 0 0 30px ${seg.color}44`,
               }}
             >
-              {/* Sheen highlight */}
               <div
                 className="absolute inset-x-0 top-0 h-1/3"
                 style={{
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.18), transparent)",
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.18), transparent)",
                 }}
               />
 
-              {/* Inline label for wide enough segments */}
               {seg.pct >= 0.12 && (
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    delay: beamRise + 0.9 + i * stagger,
-                    duration: 0.5,
-                  }}
+                  transition={{ delay: beamRise + 0.9 + i * stagger, duration: 0.5 }}
                   className="relative flex h-full flex-col items-center justify-center px-2 text-center"
                 >
                   <div
@@ -152,7 +141,6 @@ export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
           ))}
         </motion.div>
 
-        {/* Legend strip — covers narrow segments that didn't get inline labels */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -160,16 +148,10 @@ export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
           className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
         >
           {significant.map((seg) => (
-            <div
-              key={seg.language}
-              className="flex items-center gap-2 text-xs text-white/70"
-            >
+            <div key={seg.language} className="flex items-center gap-2 text-xs text-white/70">
               <span
                 className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{
-                  backgroundColor: seg.color,
-                  boxShadow: `0 0 12px ${seg.color}88`,
-                }}
+                style={{ backgroundColor: seg.color, boxShadow: `0 0 12px ${seg.color}88` }}
               />
               <span className="font-medium text-white/90">{seg.language}</span>
               <span className="tabular-nums text-white/50">
@@ -180,7 +162,6 @@ export function ConstellationScene({ ctx }: { ctx: SceneContext }) {
         </motion.div>
       </div>
 
-      {/* Footnote: ties the visual back to the story palette */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.5 }}

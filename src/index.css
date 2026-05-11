@@ -27,7 +27,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Subtle noise texture overlay */
 body::before {
   content: "";
   position: fixed;
@@ -42,7 +41,7 @@ body::before {
   z-index: 1;
 }
 
-/* Scrollbar */
+/* Default scrollbar — dark, thin, matches theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -55,4 +54,52 @@ body::before {
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Reusable thin horizontal scroller for inline data viz */
+.dp-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.dp-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+
+.dp-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 8px;
+}
+
+.dp-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 3px;
+}
+
+.dp-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Edge fade affordance: a soft right-edge gradient over a scrolling row */
+.dp-fade-right {
+  position: relative;
+}
+
+.dp-fade-right::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--surface) 85%
+  );
 }
