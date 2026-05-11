@@ -19,9 +19,15 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
   const startDate = new Date(dates[0]);
   const endDate = new Date(dates[dates.length - 1]);
 
+  // Scale cells to fill the wide container
+  const rectSize = 15;
+  const space = 4;
+  const cellTotal = rectSize + space;
+  const svgWidth = data.totalWeeks * cellTotal + 60;
+
   return (
-    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-5 pr-7">
-      <div className="mb-4 flex items-baseline justify-between">
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-6">
+      <div className="mb-5 flex items-baseline justify-between">
         <span className="text-sm font-medium text-[var(--text)]">
           Contributions
         </span>
@@ -29,16 +35,17 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
           {data.totalContributions.toLocaleString()} in the last year
         </span>
       </div>
-      <div style={{ overflowX: "auto", overflowY: "hidden" }}>
+      <div>
         <HeatMap
           value={value}
           startDate={startDate}
           endDate={endDate}
-          width={data.totalWeeks * 14 + 60}
-          rectSize={11}
+          width={svgWidth}
+          rectSize={rectSize}
           legendCellSize={0}
-          space={3}
+          space={space}
           style={{
+            width: "100%",
             color: "var(--text-muted)",
             fontSize: 10,
           }}
@@ -49,16 +56,16 @@ export function ActivityHeatmap({ data }: { data: ContributionData }) {
             8: "#15803d",
             12: "#22c55e",
           }}
-          rectProps={{ rx: 2 }}
+          rectProps={{ rx: 3 }}
         />
       </div>
-      <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-[var(--text-muted)]">
+      <div className="mt-4 flex items-center justify-end gap-2 text-[10px] text-[var(--text-muted)]">
         <span>Less</span>
         {["var(--surface-2)", "#14532d", "#166534", "#15803d", "#22c55e"].map(
           (c) => (
             <span
               key={c}
-              className="inline-block h-[10px] w-[10px] rounded-sm"
+              className="inline-block h-[11px] w-[11px] rounded-sm"
               style={{ backgroundColor: c }}
             />
           )
