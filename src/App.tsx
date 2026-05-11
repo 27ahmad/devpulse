@@ -468,8 +468,17 @@ function App() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-3xl px-4 py-6">
-        {username && (
+      {!username && (
+        <div className="mx-auto max-w-3xl px-4 py-6">
+          <HeroLanding onSearch={handleSearch} />
+          <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
+            DevPulse &middot; Data from GitHub API
+          </footer>
+        </div>
+      )}
+
+      {username && (
+        <div className="mx-auto max-w-6xl px-6 py-6">
           <header className="mb-8 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <button
@@ -487,15 +496,14 @@ function App() {
             </div>
             <SearchInput onSubmit={handleSearch} />
           </header>
-        )}
 
-        {!username && <HeroLanding onSearch={handleSearch} />}
-        {username && <Dashboard username={username} />}
+          <Dashboard username={username} />
 
-        <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
-          DevPulse &middot; Data from GitHub API
-        </footer>
-      </div>
+          <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/40">
+            DevPulse &middot; Data from GitHub API
+          </footer>
+        </div>
+      )}
     </div>
   );
 }
