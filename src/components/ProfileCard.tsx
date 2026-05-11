@@ -1,4 +1,4 @@
-import type { GitHubUser } from "@/hooks/useGitHubUser";
+import type { GitHubUser } from "../hooks/useGitHubUser";
 
 export function ProfileCard({ user }: { user: GitHubUser }) {
   const joinYear = new Date(user.created_at).getFullYear();

@@ -1,5 +1,5 @@
-import type { GitHubRepo } from "@/hooks/useGitHubRepos";
-import { getLanguageColor } from "@/utils/languages";
+import type { GitHubRepo } from "../hooks/useGitHubRepos";
+import { getLanguageColor } from "../utils/languages";
 
 function timeAgo(dateStr: string): string {
   const seconds = Math.floor(

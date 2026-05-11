@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
-import { useGitHubUser } from "@/hooks/useGitHubUser";
-import { useGitHubRepos } from "@/hooks/useGitHubRepos";
-import { ProfileCard } from "@/components/ProfileCard";
-import { RepoList } from "@/components/RepoList";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ProfileSkeleton, ReposSkeleton } from "@/components/Skeleton";
+import { useGitHubUser } from "./hooks/useGitHubUser";
+import { useGitHubRepos } from "./hooks/useGitHubRepos";
+import { ProfileCard } from "./components/ProfileCard";
+import { RepoList } from "./components/RepoList";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ProfileSkeleton, ReposSkeleton } from "./components/Skeleton";
 
 type Tab = "profile" | "analytics";
 
