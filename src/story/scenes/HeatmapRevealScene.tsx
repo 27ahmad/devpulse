@@ -24,7 +24,7 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
   const gap = 3;
   const stride = cellSize + gap;
   const totalWeeks = Math.ceil(entries.length / 7);
-  const gutter = 30; // left space for day-of-week labels
+  const gutter = 44; // left space for day-of-week labels
   const gridWidth = totalWeeks * stride;
   const svgWidth = gutter + gridWidth;
   const labelBand = 56;
@@ -76,7 +76,7 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
     const cx = gutter + (s.startCol + s.endCol) * stride * 0.5 + cellSize / 2;
     const next = spans[i + 1];
     const nextCx = next
-      ? (next.startCol + next.endCol) * stride * 0.5 + cellSize / 2
+      ? gutter + (next.startCol + next.endCol) * stride * 0.5 + cellSize / 2
       : Infinity;
     const minGap = approxLabelWidth + 4;
     return { ...s, cx, suppressed: nextCx - cx < minGap };
