@@ -25,16 +25,15 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
   const stride = cellSize + gap;
   const totalWeeks = Math.ceil(entries.length / 7);
   const gridWidth = totalWeeks * stride;
-  const labelBand = 28;
+  const labelBand = 38;
+  const ruleY = labelBand - 6;
   const gridHeight = 7 * stride;
   const height = labelBand + gridHeight;
 
   const max = Math.max(...entries.map(([, v]) => v), 1);
 
-  // Group columns by month so we can center the month label across each
-  // month's span instead of pinning it to the column where the month starts.
-  // UTC parsing avoids the one-day drift that bites ISO date strings on
-  // western timezones near month boundaries.
+  // Group columns by month so the label sits centered on each month's span
+  // instead of pinned to where the month happens to start.
   const spans: MonthSpan[] = [];
   for (let col = 0; col < totalWeeks; col++) {
     const idx = col * 7;
@@ -42,23 +41,34 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
     const [dateStr] = entries[idx];
     const month = new Date(dateStr + "T00:00:00Z").getUTCMonth();
     const last = spans[spans.length - 1];
-    if (last && last.month === month) {
-      last.endCol = col;
-    } else {
-      spans.push({ month, startCol: col, endCol: col });
-    }
+    if (last && last.month === month) last.endCol = col;
+    else spans.push({ month, startCol: col, endCol: col });
   }
 
-  // The past year wraps from e.g. May to May — drop the trailing slice if it
-  // would duplicate the leading month and only spans a column or two, which
-  // makes the label feel awkward at the right edge.
-  if (
-    spans.length > 1 &&
-    spans[0].month === spans[spans.length - 1].month &&
-    spans[spans.length - 1].endCol - spans[spans.length - 1].startCol < 2
-  ) {
-    spans.pop();
+  // The past year wraps from e.g. May → May. Drop whichever instance has the
+  // smaller span so the surviving label is the meaningful one.
+  if (spans.length > 1 && spans[0].month === spans[spans.length - 1].month) {
+    const first = spans[0];
+    const last = spans[spans.length - 1];
+    const firstCols = first.endCol - first.startCol + 1;
+    const lastCols = last.endCol - last.startCol + 1;
+    if (firstCols >= lastCols) spans.pop();
+    else spans.shift();
   }
+
+  // Estimate label width and suppress any label that would collide with the
+  // next one — this keeps very narrow months (1 column wide at year edges)
+  // from crashing into their neighbors.
+  const approxLabelWidth = 28; // px in viewBox units, for "MMM" at fontSize 11 + tracking
+  const visible = spans.map((s, i) => {
+    const cx = (s.startCol + s.endCol) * stride * 0.5 + cellSize / 2;
+    const next = spans[i + 1];
+    const nextCx = next
+      ? (next.startCol + next.endCol) * stride * 0.5 + cellSize / 2
+      : Infinity;
+    const minGap = approxLabelWidth + 4;
+    return { ...s, cx, suppressed: nextCx - cx < minGap };
+  });
 
   return (
     <SceneShell>
@@ -70,43 +80,52 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
       >
         Every cell, a day you showed up
       </motion.div>
-      <div className="mt-10 w-full max-w-[1100px] overflow-hidden">
+      <div className="mt-12 w-full max-w-[1100px] overflow-hidden">
         <svg
           viewBox={`0 0 ${gridWidth} ${height}`}
           width="100%"
           preserveAspectRatio="xMidYMid meet"
         >
-          {spans.map((s, i) => {
-            // Center the label across the month's span. Drop sliver months
-            // that don't have room to render readably.
-            const cols = s.endCol - s.startCol + 1;
-            if (cols < 2) return null;
-            const cx = (s.startCol + s.endCol) * stride * 0.5 + cellSize / 2;
+          {visible.map((s, i) => {
+            if (s.suppressed) return null;
             return (
               <motion.text
                 key={`${s.month}-${s.startCol}`}
-                x={cx}
-                y={labelBand - 12}
+                x={s.cx}
+                y={labelBand - 16}
                 textAnchor="middle"
-                initial={reducedMotion ? false : { opacity: 0, y: labelBand - 16 }}
-                animate={{ opacity: 0.7, y: labelBand - 12 }}
+                initial={reducedMotion ? false : { opacity: 0, y: labelBand - 20 }}
+                animate={{ opacity: 0.78, y: labelBand - 16 }}
                 transition={{
                   delay: reducedMotion ? 0 : 0.3 + i * 0.05,
                   duration: 0.5,
                 }}
                 style={{
                   fontFamily: "inherit",
-                  fontSize: 10,
-                  fontWeight: 500,
-                  letterSpacing: "0.18em",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: "0.22em",
                   textTransform: "uppercase",
-                  fill: "rgba(255,255,255,0.85)",
+                  fill: "rgba(255,255,255,0.92)",
                 }}
               >
                 {MONTH_ABBR[s.month]}
               </motion.text>
             );
           })}
+
+          {/* Hairline between labels and grid for clearer separation */}
+          <motion.line
+            x1={0}
+            x2={gridWidth}
+            y1={ruleY}
+            y2={ruleY}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1}
+            initial={reducedMotion ? false : { pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+          />
 
           {entries.map(([date, count], i) => {
             const col = Math.floor(i / 7);
@@ -136,7 +155,6 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
         </svg>
       </div>
 
-      {/* Activity-level legend */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
