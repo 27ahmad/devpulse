@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { isRateLimited, isValidUsername } from "./_rateLimit";
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 const TOP_N_FOR_WEIGHTING = 5;
@@ -97,10 +98,12 @@ async function fetchRepoLanguages(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (await isRateLimited(req, res)) return;
+
   const { username } = req.query;
 
-  if (!username || typeof username !== "string") {
-    return res.status(400).json({ error: "Missing 'username' query parameter" });
+  if (!isValidUsername(username)) {
+    return res.status(400).json({ error: "Invalid or missing 'username' parameter" });
   }
 
   const token = process.env.GITHUB_PAT;

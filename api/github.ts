@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { isRateLimited } from "./_rateLimit";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -38,6 +39,8 @@ async function fetchWithBackoff(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { path, per_page, page, sort, type } = req.query;
+
+  if (await isRateLimited(req, res)) return;
 
   if (!path || typeof path !== "string") {
     return res.status(400).json({ error: "Missing 'path' query parameter" });
