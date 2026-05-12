@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { isRateLimited } from "./_rateLimit";
+import { isRateLimited } from "../src/lib/rateLimit";
 
 const GITHUB_API = "https://api.github.com";
 

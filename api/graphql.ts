@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { isRateLimited, isValidUsername } from "./_rateLimit";
+import { isRateLimited, isValidUsername } from "../src/lib/rateLimit";
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 const TOP_N_FOR_WEIGHTING = 5;

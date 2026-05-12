@@ -3,13 +3,12 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 15;
 
-// Per-instance in-memory store — resets on cold start, fine for burst protection.
 const store = new Map<string, { count: number; resetAt: number }>();
 
-export function getIp(req: VercelRequest): string {
+function getIp(req: VercelRequest): string {
   const forwarded = req.headers["x-forwarded-for"];
-  const ip = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0];
-  return (ip ?? req.socket?.remoteAddress ?? "unknown").trim();
+  const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0];
+  return (raw ?? "unknown").trim();
 }
 
 export function isRateLimited(req: VercelRequest, res: VercelResponse): boolean {
@@ -33,7 +32,7 @@ export function isRateLimited(req: VercelRequest, res: VercelResponse): boolean 
   return false;
 }
 
-const USERNAME_RE = /^[a-zA-Z0-9-]{1,39}$/;
+export const USERNAME_RE = /^[a-zA-Z0-9-]{1,39}$/;
 
 export function isValidUsername(username: unknown): username is string {
   return typeof username === "string" && USERNAME_RE.test(username);
