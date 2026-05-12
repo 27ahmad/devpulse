@@ -5,12 +5,30 @@ import { SceneShell, CountUp } from "./sceneShared";
 
 export function StreakScene({ ctx }: { ctx: SceneContext }) {
   const { insights, palette } = ctx;
-  const showActive = insights.currentStreak > 0;
-  const headline = showActive ? insights.currentStreak : insights.longestStreak;
-  const label = showActive ? "day streak, still going." : "day streak, your longest.";
-  const subline = showActive
-    ? `Longest run this year: ${insights.longestStreak} days.`
-    : `${insights.activeDays} active days across the year.`;
+  const { currentStreak, longestStreak, activeDays } = insights;
+
+  // Always lead with the most impressive number — usually the longest run.
+  // Only swap to "still going" framing when the user is currently in (or
+  // very close to) their personal best. Otherwise the headline becomes
+  // misleading: "1 day streak, still going" buries a 47-day longest run.
+  const stillGoing =
+    currentStreak > 0 && currentStreak >= Math.max(longestStreak * 0.9, 5);
+
+  const headline = stillGoing ? currentStreak : longestStreak;
+  const headlineCopy = stillGoing
+    ? "day streak, still going."
+    : "days, your longest run.";
+
+  let subline: string;
+  if (stillGoing) {
+    subline = `${activeDays} active days across the year.`;
+  } else if (currentStreak > 0) {
+    subline = `Currently on day ${currentStreak}.`;
+  } else if (longestStreak >= 3) {
+    subline = `${activeDays} active days across the year.`;
+  } else {
+    subline = `${activeDays} active days this year.`;
+  }
 
   return (
     <SceneShell>
@@ -34,7 +52,7 @@ export function StreakScene({ ctx }: { ctx: SceneContext }) {
         transition={{ delay: 1.4, duration: 0.6 }}
         className="mt-4 text-xl text-white/80"
       >
-        {label}
+        {headlineCopy}
       </motion.div>
       <motion.div
         initial={{ opacity: 0 }}

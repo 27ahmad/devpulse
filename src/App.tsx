@@ -142,149 +142,179 @@ function HeroBeam() {
   );
 }
 
-function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
+function HeroBackdrop() {
+  return (
+    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.6 }}
+        className="absolute left-1/2 top-[-10%] h-[600px] w-[1000px] -translate-x-1/2 rounded-full blur-[140px]"
+        style={{ background: "radial-gradient(circle, #6366f166, transparent 65%)" }}
+      />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.4, delay: 0.2 }}
+        className="absolute -left-40 top-[18%] h-[420px] w-[420px] rounded-full blur-[110px]"
+        style={{ background: "radial-gradient(circle, #ec489955, transparent 70%)" }}
+      />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.4, delay: 0.35 }}
+        className="absolute -right-40 top-[25%] h-[480px] w-[480px] rounded-full blur-[110px]"
+        style={{ background: "radial-gradient(circle, #a78bfa55, transparent 70%)" }}
+      />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.4, delay: 0.55 }}
+        className="absolute bottom-[5%] left-1/2 h-[400px] w-[900px] -translate-x-1/2 rounded-full blur-[120px]"
+        style={{ background: "radial-gradient(circle, #22d3ee44, transparent 70%)" }}
+      />
+      <div
+        className="absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+          maskImage:
+            "radial-gradient(ellipse 80% 60% at center, black 30%, transparent 80%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 80% 60% at center, black 30%, transparent 80%)",
+        }}
+      />
+    </div>
+  );
+}
+
+function HeroEyebrow() {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="relative flex flex-col items-center px-4 py-16 text-center sm:py-24"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.6 }}
+      className="mb-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.4em] text-[var(--text-muted)]"
     >
-      {/* Ambient backdrop — multiple blobs in the brand palette */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.4 }}
-          className="absolute left-1/2 top-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full blur-[120px]"
-          style={{ background: "radial-gradient(circle, #6366f155, transparent 70%)" }}
-        />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.4, delay: 0.2 }}
-          className="absolute -left-32 top-32 h-72 w-72 rounded-full blur-3xl"
-          style={{ background: "radial-gradient(circle, #ec489955, transparent 70%)" }}
-        />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.4, delay: 0.4 }}
-          className="absolute -right-32 top-48 h-80 w-80 rounded-full blur-3xl"
-          style={{ background: "radial-gradient(circle, #a78bfa55, transparent 70%)" }}
-        />
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.4, delay: 0.6 }}
-          className="absolute bottom-32 left-1/2 h-72 w-[600px] -translate-x-1/2 rounded-full blur-[100px]"
-          style={{ background: "radial-gradient(circle, #22d3ee33, transparent 70%)" }}
-        />
-        {/* faint grid */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-            maskImage:
-              "radial-gradient(ellipse at center, black 30%, transparent 75%)",
-          }}
-        />
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.6 }}
-        className="mb-7 flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-1 text-[11px] font-medium text-[var(--text-muted)] backdrop-blur"
-      >
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-        </span>
+      <span className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--text-muted)]/50" />
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+      </span>
+      <span className="font-medium text-[var(--text-secondary)]">
         GitHub Wrapped, but cooler
-      </motion.div>
-
-      <motion.h1
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.7 }}
-        className="mb-5 bg-gradient-to-br from-white via-white to-white/30 bg-clip-text text-6xl font-semibold tracking-tight text-transparent sm:text-8xl"
-      >
-        DevPulse
-      </motion.h1>
-      <motion.p
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
-        className="mb-10 max-w-md text-base leading-relaxed text-[var(--text-secondary)] sm:text-lg"
-      >
-        Drop a GitHub username. Watch a cinematic year-in-code in 60 seconds,
-        then dive into the dashboard.
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-        className="w-full max-w-md"
-      >
-        <SearchInput onSubmit={onSearch} size="large" />
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.55, duration: 0.6 }}
-        className="mt-5 flex flex-wrap items-center justify-center gap-1.5"
-      >
-        <span className="mr-1 text-[11px] text-[var(--text-muted)]/60">
-          Try
-        </span>
-        {SUGGESTED_USERS.map((u) => (
-          <button
-            key={u}
-            onClick={() => onSearch(u)}
-            className="rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-2.5 py-1 text-[11px] text-[var(--text-secondary)] backdrop-blur transition-colors hover:border-[var(--accent)]/40 hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-          >
-            {u}
-          </button>
-        ))}
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.7, duration: 0.6 }}
-        className="mt-4 flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]/60"
-      >
-        <Lock size={10} />
-        Public GitHub data only.
-      </motion.div>
-
-      {/* Preview strip */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.7 }}
-        className="mt-20 w-full max-w-xl rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-5 backdrop-blur sm:p-6"
-      >
-        <HeroBeam />
-        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--border-subtle)] pt-4 text-[11px] text-[var(--text-muted)]">
-          {[
-            ["12+", "personalized scenes"],
-            ["Archetype", "reveal"],
-            ["Share", "card"],
-          ].map(([k, v]) => (
-            <div key={k} className="flex items-baseline gap-1.5">
-              <strong className="text-[var(--text)]">{k}</strong>
-              {v}
-            </div>
-          ))}
-        </div>
-      </motion.div>
+      </span>
+      <span className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--text-muted)]/50" />
     </motion.div>
+  );
+}
+
+function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
+  return (
+    <div className="relative min-h-screen">
+      <HeroBackdrop />
+
+      {/* Top section: chip → wordmark → search → chips → disclaimer */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative flex flex-col items-center px-4 pt-20 text-center sm:pt-28"
+      >
+        <HeroEyebrow />
+
+        <motion.h1
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
+          className="mb-6 bg-gradient-to-br from-white via-white to-white/30 bg-clip-text text-7xl font-semibold tracking-tighter text-transparent sm:text-[7rem] md:text-[9rem]"
+        >
+          DevPulse
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="mb-12 max-w-xl text-base leading-relaxed text-[var(--text-secondary)] sm:text-lg"
+        >
+          Drop a GitHub username. Watch a cinematic year-in-code in 60 seconds,
+          then dive into the dashboard.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="w-full max-w-lg"
+        >
+          <SearchInput onSubmit={onSearch} size="large" />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.55, duration: 0.6 }}
+          className="mt-5 flex flex-wrap items-center justify-center gap-1.5"
+        >
+          <span className="mr-1 text-[11px] text-[var(--text-muted)]/60">
+            Try
+          </span>
+          {SUGGESTED_USERS.map((u) => (
+            <button
+              key={u}
+              onClick={() => onSearch(u)}
+              className="rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-2.5 py-1 text-[11px] text-[var(--text-secondary)] backdrop-blur transition-colors hover:border-[var(--accent)]/40 hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+            >
+              {u}
+            </button>
+          ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7, duration: 0.6 }}
+          className="mt-4 flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]/60"
+        >
+          <Lock size={10} />
+          Public GitHub data only.
+        </motion.div>
+      </motion.section>
+
+      {/* Preview section: wider, breathing room */}
+      <motion.section
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.8 }}
+        className="relative mx-auto mt-24 w-full max-w-3xl px-4 pb-20"
+      >
+        <div className="mb-3 flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-[var(--text-muted)]/70">
+          <span>What you'll get</span>
+          <span>·</span>
+        </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/30 p-6 backdrop-blur-md sm:p-8">
+          <HeroBeam />
+          <div className="mt-6 grid grid-cols-3 gap-4 border-t border-[var(--border-subtle)] pt-5">
+            {[
+              ["12+", "personalized scenes"],
+              ["Archetype", "reveal"],
+              ["Share", "card"],
+            ].map(([k, v]) => (
+              <div key={k} className="text-center">
+                <div className="text-base font-semibold text-[var(--text)]">
+                  {k}
+                </div>
+                <div className="mt-0.5 text-[11px] text-[var(--text-muted)]">
+                  {v}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+    </div>
   );
 }
 
@@ -629,12 +659,12 @@ function App() {
   return (
     <div className="min-h-screen">
       {!username && (
-        <div className="mx-auto max-w-3xl px-4 py-4 sm:py-6">
+        <>
           <HeroLanding onSearch={handleSearch} />
-          <footer className="mt-16 pb-6 text-center text-[11px] text-[var(--text-muted)]/50">
+          <footer className="pb-6 text-center text-[11px] text-[var(--text-muted)]/50">
             DevPulse · Public GitHub data
           </footer>
-        </div>
+        </>
       )}
 
       {username && view === "story" && (
