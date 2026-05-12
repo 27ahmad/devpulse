@@ -195,24 +195,20 @@ function HeroEyebrow() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1, duration: 0.6 }}
-      className="mb-8 flex items-center gap-3 text-[10px] uppercase tracking-[0.4em] text-[var(--text-muted)]"
+      className="mb-8 flex items-center gap-4 text-[10px] uppercase tracking-[0.45em] text-[var(--text-muted)]"
     >
-      <span className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--text-muted)]/50" />
-      <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-      </span>
+      <span className="h-px w-10 bg-gradient-to-r from-transparent to-[var(--text-muted)]/40" />
       <span className="font-medium text-[var(--text-secondary)]">
-        GitHub Wrapped, but cooler
+        Your year in code, in 60 seconds
       </span>
-      <span className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--text-muted)]/50" />
+      <span className="h-px w-10 bg-gradient-to-l from-transparent to-[var(--text-muted)]/40" />
     </motion.div>
   );
 }
 
 function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
   return (
-    <div className="relative min-h-screen">
+    <div className="relative">
       <HeroBackdrop />
 
       {/* Top section: chip → wordmark → search → chips → disclaimer */}
@@ -220,7 +216,7 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="relative flex flex-col items-center px-4 pt-20 text-center sm:pt-28"
+        className="relative flex flex-col items-center px-4 pt-16 text-center sm:pt-24"
       >
         <HeroEyebrow />
 
@@ -283,17 +279,14 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
         </motion.div>
       </motion.section>
 
-      {/* Preview section: wider, breathing room */}
+      {/* Preview strip — tightened against the hero so the page reads as one
+          composition instead of two stacked sections separated by dead space */}
       <motion.section
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.8 }}
-        className="relative mx-auto mt-24 w-full max-w-3xl px-4 pb-20"
+        transition={{ delay: 0.8, duration: 0.7 }}
+        className="relative mx-auto mt-12 w-full max-w-3xl px-4 pb-16"
       >
-        <div className="mb-3 flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-[var(--text-muted)]/70">
-          <span>What you'll get</span>
-          <span>·</span>
-        </div>
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)]/30 p-6 backdrop-blur-md sm:p-8">
           <HeroBeam />
           <div className="mt-6 grid grid-cols-3 gap-4 border-t border-[var(--border-subtle)] pt-5">
