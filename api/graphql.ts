@@ -1,5 +1,28 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { isRateLimited, isValidUsername } from "../src/lib/rateLimit";
+
+const WINDOW_MS = 60_000;
+const MAX_REQUESTS = 15;
+const ipStore = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(req: VercelRequest, res: VercelResponse): boolean {
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0]) ?? "unknown";
+  const now = Date.now();
+  const entry = ipStore.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipStore.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+  entry.count += 1;
+  if (entry.count > MAX_REQUESTS) {
+    res.setHeader("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)));
+    res.status(429).json({ error: "Too many requests." });
+    return true;
+  }
+  return false;
+}
+
+const USERNAME_RE = /^[a-zA-Z0-9-]{1,39}$/;
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
 const TOP_N_FOR_WEIGHTING = 5;
@@ -98,11 +121,11 @@ async function fetchRepoLanguages(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (isRateLimited(req, res)) return;
+  if (checkRateLimit(req, res)) return;
 
   const { username } = req.query;
 
-  if (!isValidUsername(username)) {
+  if (!username || typeof username !== "string" || !USERNAME_RE.test(username)) {
     return res.status(400).json({ error: "Invalid or missing 'username' parameter" });
   }
 
