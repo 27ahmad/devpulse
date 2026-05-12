@@ -27,19 +27,19 @@ import { LinesChangedScene } from "./scenes/LinesChangedScene";
 // Durations are tuned to each scene's animation envelope: short for transitions,
 // longer for reveals where the user needs a beat to read.
 const CATALOG: SceneCatalog = {
-  opening: { id: "opening", duration: 2400, Component: OpeningScene },
-  yearOpen: { id: "year-open", duration: 2800, Component: YearOpenScene },
-  total: { id: "total", duration: 3600, Component: TotalContributionsScene },
-  heatmap: { id: "heatmap", duration: 5000, Component: HeatmapRevealScene },
-  definingDay: { id: "defining-day", duration: 3800, Component: DefiningDayScene },
-  streak: { id: "streak", duration: 3600, Component: StreakScene },
-  cadence: { id: "cadence", duration: 4000, Component: CadenceScene },
-  bestMonth: { id: "best-month", duration: 3600, Component: BestMonthScene },
-  homeBase: { id: "home-base", duration: 4200, Component: HomeBaseScene },
-  languages: { id: "languages", duration: 5400, Component: ConstellationScene },
-  linesChanged: { id: "lines-changed", duration: 4200, Component: LinesChangedScene },
-  collaboration: { id: "collaboration", duration: 4200, Component: CollaborationScene },
-  archetype: { id: "archetype", duration: 4800, Component: ArchetypeRevealScene },
+  opening: { id: "opening", duration: 3200, Component: OpeningScene },
+  yearOpen: { id: "year-open", duration: 3600, Component: YearOpenScene },
+  total: { id: "total", duration: 4600, Component: TotalContributionsScene },
+  heatmap: { id: "heatmap", duration: 6400, Component: HeatmapRevealScene },
+  definingDay: { id: "defining-day", duration: 4800, Component: DefiningDayScene },
+  streak: { id: "streak", duration: 4600, Component: StreakScene },
+  cadence: { id: "cadence", duration: 5200, Component: CadenceScene },
+  bestMonth: { id: "best-month", duration: 4600, Component: BestMonthScene },
+  homeBase: { id: "home-base", duration: 5400, Component: HomeBaseScene },
+  languages: { id: "languages", duration: 6800, Component: ConstellationScene },
+  linesChanged: { id: "lines-changed", duration: 5400, Component: LinesChangedScene },
+  collaboration: { id: "collaboration", duration: 5200, Component: CollaborationScene },
+  archetype: { id: "archetype", duration: 6000, Component: ArchetypeRevealScene },
   share: { id: "share", duration: 999_999, Component: () => null },
 };
 
@@ -94,10 +94,18 @@ export function StoryPlayer({ user, contributions, onExit }: Props) {
 
   const holdTimer = useRef<number | null>(null);
 
-  const onPointerDown = () => {
+  // The story container reacts to taps for advance/back, but only when the
+  // user actually clicked the backdrop — not when they tapped a button or
+  // link sitting on top of it.
+  const isInteractive = (e: React.PointerEvent) =>
+    !!(e.target as HTMLElement).closest("button, a, input");
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (isInteractive(e)) return;
     holdTimer.current = window.setTimeout(() => setPaused(true), 220);
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    if (isInteractive(e)) return;
     if (holdTimer.current !== null) {
       clearTimeout(holdTimer.current);
       holdTimer.current = null;
@@ -136,10 +144,7 @@ export function StoryPlayer({ user, contributions, onExit }: Props) {
           return (
             <button
               key={s.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                goTo(i);
-              }}
+              onClick={() => goTo(i)}
               style={{ flex }}
               className="group relative h-[3px] overflow-hidden rounded-full bg-white/15"
               aria-label={`Jump to ${s.id}`}
@@ -156,20 +161,14 @@ export function StoryPlayer({ user, contributions, onExit }: Props) {
 
       <div className="absolute right-3 top-6 z-20 flex items-center gap-2">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setPaused(!paused);
-          }}
+          onClick={() => setPaused(!paused)}
           className="rounded-full bg-black/40 p-2 text-white/80 backdrop-blur hover:bg-black/60"
           aria-label={paused ? "Play" : "Pause"}
         >
           {paused ? <Play size={14} /> : <Pause size={14} />}
         </button>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onExit();
-          }}
+          onClick={onExit}
           className="rounded-full bg-black/40 p-2 text-white/80 backdrop-blur hover:bg-black/60"
           aria-label="Close story"
         >

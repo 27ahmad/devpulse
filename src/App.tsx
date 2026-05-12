@@ -93,23 +93,103 @@ function SearchInput({
 }
 
 /* ─── Hero Landing ─── */
+const SUGGESTED_USERS = ["torvalds", "gaearon", "sindresorhus", "tj"];
+const HERO_BEAM = [
+  { color: "#3178c6", pct: 38 }, // TypeScript
+  { color: "#f1e05a", pct: 22 }, // JavaScript
+  { color: "#3572A5", pct: 14 }, // Python
+  { color: "#00ADD8", pct: 10 }, // Go
+  { color: "#dea584", pct: 8 },  // Rust
+  { color: "#52525b", pct: 8 },  // Other
+];
+
+function HeroBeam() {
+  return (
+    <div className="relative w-full">
+      <div className="mb-3 flex items-center justify-between text-[10px] uppercase tracking-[0.25em] text-[var(--text-muted)]/70">
+        <span>Year in code</span>
+        <span>preview</span>
+      </div>
+      <div className="flex h-12 w-full overflow-hidden rounded-lg ring-1 ring-white/5">
+        {HERO_BEAM.map((seg, i) => (
+          <motion.div
+            key={i}
+            initial={{ width: 0 }}
+            animate={{ width: `${seg.pct}%` }}
+            transition={{ delay: 0.9 + i * 0.07, duration: 0.9, ease: [0.2, 0.7, 0.2, 1] }}
+            style={{
+              background: `linear-gradient(180deg, ${seg.color}, ${seg.color}b3)`,
+              boxShadow:
+                i === 0
+                  ? `inset 0 0 30px ${seg.color}66`
+                  : `inset 0 0 18px ${seg.color}44`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] text-[var(--text-muted)] sm:grid-cols-6">
+        {["TypeScript", "JavaScript", "Python", "Go", "Rust", "Other"].map((l, i) => (
+          <div key={l} className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ backgroundColor: HERO_BEAM[i].color }}
+            />
+            <span className="truncate">{l}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, ease: [0.2, 0.7, 0.2, 1] }}
-      className="relative flex flex-col items-center px-4 py-20 text-center sm:py-32"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="relative flex flex-col items-center px-4 py-16 text-center sm:py-24"
     >
-      {/* Ambient blob backdrop */}
+      {/* Ambient backdrop — multiple blobs in the brand palette */}
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div
-          className="absolute -left-32 top-10 h-72 w-72 rounded-full blur-3xl"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.4 }}
+          className="absolute left-1/2 top-0 h-[420px] w-[700px] -translate-x-1/2 rounded-full blur-[120px]"
           style={{ background: "radial-gradient(circle, #6366f155, transparent 70%)" }}
         />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.4, delay: 0.2 }}
+          className="absolute -left-32 top-32 h-72 w-72 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, #ec489955, transparent 70%)" }}
+        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.4, delay: 0.4 }}
+          className="absolute -right-32 top-48 h-80 w-80 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, #a78bfa55, transparent 70%)" }}
+        />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.4, delay: 0.6 }}
+          className="absolute bottom-32 left-1/2 h-72 w-[600px] -translate-x-1/2 rounded-full blur-[100px]"
+          style={{ background: "radial-gradient(circle, #22d3ee33, transparent 70%)" }}
+        />
+        {/* faint grid */}
         <div
-          className="absolute -right-32 top-40 h-80 w-80 rounded-full blur-3xl"
-          style={{ background: "radial-gradient(circle, #a78bfa44, transparent 70%)" }}
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+            maskImage:
+              "radial-gradient(ellipse at center, black 30%, transparent 75%)",
+          }}
         />
       </div>
 
@@ -117,8 +197,12 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.6 }}
-        className="mb-7 rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-1 text-[11px] font-medium text-[var(--text-muted)] backdrop-blur"
+        className="mb-7 flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-3 py-1 text-[11px] font-medium text-[var(--text-muted)] backdrop-blur"
       >
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        </span>
         GitHub Wrapped, but cooler
       </motion.div>
 
@@ -126,7 +210,7 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.7 }}
-        className="mb-4 bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-5xl font-semibold tracking-tight text-transparent sm:text-7xl"
+        className="mb-5 bg-gradient-to-br from-white via-white to-white/30 bg-clip-text text-6xl font-semibold tracking-tight text-transparent sm:text-8xl"
       >
         DevPulse
       </motion.h1>
@@ -134,10 +218,10 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.6 }}
-        className="mb-10 max-w-md text-sm leading-relaxed text-[var(--text-muted)] sm:text-base"
+        className="mb-10 max-w-md text-base leading-relaxed text-[var(--text-secondary)] sm:text-lg"
       >
-        Drop a GitHub username. Get a 60-second cinematic year-in-code, then a
-        deep-dive dashboard.
+        Drop a GitHub username. Watch a cinematic year-in-code in 60 seconds,
+        then dive into the dashboard.
       </motion.p>
 
       <motion.div
@@ -152,34 +236,53 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.6 }}
-        className="mt-5 flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]/70"
+        transition={{ delay: 0.55, duration: 0.6 }}
+        className="mt-5 flex flex-wrap items-center justify-center gap-1.5"
       >
-        <Lock size={10} />
-        Public GitHub data only. Private contributions aren't included.
+        <span className="mr-1 text-[11px] text-[var(--text-muted)]/60">
+          Try
+        </span>
+        {SUGGESTED_USERS.map((u) => (
+          <button
+            key={u}
+            onClick={() => onSearch(u)}
+            className="rounded-full border border-[var(--border)] bg-[var(--surface)]/60 px-2.5 py-1 text-[11px] text-[var(--text-secondary)] backdrop-blur transition-colors hover:border-[var(--accent)]/40 hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+          >
+            {u}
+          </button>
+        ))}
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: 0.7, duration: 0.6 }}
-        className="mt-16 grid w-full max-w-lg grid-cols-2 gap-px overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--border)] sm:grid-cols-4"
+        className="mt-4 flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]/60"
       >
-        {[
-          { label: "Story", desc: "11 scenes" },
-          { label: "Insights", desc: "Real signals" },
-          { label: "Heatmap", desc: "Full year" },
-          { label: "Shareable", desc: "Personal cards" },
-        ].map((f) => (
-          <div key={f.label} className="bg-[var(--surface)] p-4 text-center">
-            <div className="text-xs font-medium text-[var(--text)]">
-              {f.label}
+        <Lock size={10} />
+        Public GitHub data only.
+      </motion.div>
+
+      {/* Preview strip */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8, duration: 0.7 }}
+        className="mt-20 w-full max-w-xl rounded-xl border border-[var(--border)] bg-[var(--surface)]/40 p-5 backdrop-blur sm:p-6"
+      >
+        <HeroBeam />
+        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[var(--border-subtle)] pt-4 text-[11px] text-[var(--text-muted)]">
+          {[
+            ["12+", "personalized scenes"],
+            ["Archetype", "reveal"],
+            ["Share", "card"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex items-baseline gap-1.5">
+              <strong className="text-[var(--text)]">{k}</strong>
+              {v}
             </div>
-            <div className="mt-0.5 text-[10px] text-[var(--text-muted)]">
-              {f.desc}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </motion.div>
     </motion.div>
   );
