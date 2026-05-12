@@ -24,11 +24,23 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
   const gap = 3;
   const stride = cellSize + gap;
   const totalWeeks = Math.ceil(entries.length / 7);
+  const gutter = 30; // left space for day-of-week labels
   const gridWidth = totalWeeks * stride;
-  const labelBand = 38;
-  const ruleY = labelBand - 6;
+  const svgWidth = gutter + gridWidth;
+  const labelBand = 56;
+  const labelY = 18;
+  const ruleY = labelBand - 10;
   const gridHeight = 7 * stride;
   const height = labelBand + gridHeight;
+
+  // Row 0 corresponds to the weekday of the first entry. Day labels show
+  // Mon/Wed/Fri (GitHub convention) on whichever rows actually carry them.
+  const firstWeekday = new Date(entries[0][0] + "T00:00:00Z").getUTCDay();
+  const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayLabels = [1, 3, 5].map((wd) => {
+    const row = (wd - firstWeekday + 7) % 7;
+    return { row, label: DAY_ABBR[wd] };
+  });
 
   const max = Math.max(...entries.map(([, v]) => v), 1);
 
@@ -61,7 +73,7 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
   // from crashing into their neighbors.
   const approxLabelWidth = 28; // px in viewBox units, for "MMM" at fontSize 11 + tracking
   const visible = spans.map((s, i) => {
-    const cx = (s.startCol + s.endCol) * stride * 0.5 + cellSize / 2;
+    const cx = gutter + (s.startCol + s.endCol) * stride * 0.5 + cellSize / 2;
     const next = spans[i + 1];
     const nextCx = next
       ? (next.startCol + next.endCol) * stride * 0.5 + cellSize / 2
@@ -82,7 +94,7 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
       </motion.div>
       <div className="mt-12 w-full max-w-[1100px] overflow-hidden">
         <svg
-          viewBox={`0 0 ${gridWidth} ${height}`}
+          viewBox={`0 0 ${svgWidth} ${height}`}
           width="100%"
           preserveAspectRatio="xMidYMid meet"
         >
@@ -92,10 +104,10 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
               <motion.text
                 key={`${s.month}-${s.startCol}`}
                 x={s.cx}
-                y={labelBand - 16}
+                y={labelY}
                 textAnchor="middle"
-                initial={reducedMotion ? false : { opacity: 0, y: labelBand - 20 }}
-                animate={{ opacity: 0.78, y: labelBand - 16 }}
+                initial={reducedMotion ? false : { opacity: 0, y: labelY - 4 }}
+                animate={{ opacity: 0.78, y: labelY }}
                 transition={{
                   delay: reducedMotion ? 0 : 0.3 + i * 0.05,
                   duration: 0.5,
@@ -116,8 +128,8 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
 
           {/* Hairline between labels and grid for clearer separation */}
           <motion.line
-            x1={0}
-            x2={gridWidth}
+            x1={gutter}
+            x2={svgWidth}
             y1={ruleY}
             y2={ruleY}
             stroke="rgba(255,255,255,0.08)"
@@ -127,11 +139,33 @@ export function HeatmapRevealScene({ ctx }: { ctx: SceneContext }) {
             transition={{ delay: 0.2, duration: 0.8 }}
           />
 
+          {dayLabels.map(({ row, label }, i) => (
+            <motion.text
+              key={label}
+              x={gutter - 8}
+              y={labelBand + row * stride + cellSize - 2}
+              textAnchor="end"
+              initial={reducedMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              transition={{ delay: reducedMotion ? 0 : 0.4 + i * 0.05, duration: 0.5 }}
+              style={{
+                fontFamily: "inherit",
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                fill: "rgba(255,255,255,0.7)",
+              }}
+            >
+              {label}
+            </motion.text>
+          ))}
+
           {entries.map(([date, count], i) => {
             const col = Math.floor(i / 7);
             const row = i % 7;
             const intensity = count === 0 ? 0 : 0.25 + (count / max) * 0.75;
-            const x = col * stride;
+            const x = gutter + col * stride;
             const y = labelBand + row * stride;
             return (
               <motion.rect
