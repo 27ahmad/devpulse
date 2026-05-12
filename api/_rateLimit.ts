@@ -1,8 +1,10 @@
-import { kv } from "@vercel/kv";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const WINDOW_SECONDS = 60;
-const MAX_REQUESTS = 15; // per IP per minute
+const WINDOW_MS = 60_000;
+const MAX_REQUESTS = 15;
+
+// Per-instance in-memory store — resets on cold start, fine for burst protection.
+const store = new Map<string, { count: number; resetAt: number }>();
 
 export function getIp(req: VercelRequest): string {
   const forwarded = req.headers["x-forwarded-for"];
@@ -10,27 +12,24 @@ export function getIp(req: VercelRequest): string {
   return (ip ?? req.socket?.remoteAddress ?? "unknown").trim();
 }
 
-/**
- * Returns true if the request should be blocked (rate limit exceeded).
- * Falls back to allowing the request if KV is unavailable.
- */
-export async function isRateLimited(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<boolean> {
-  try {
-    const ip = getIp(req);
-    const key = `rl:${ip}`;
-    const hits = await kv.incr(key);
-    if (hits === 1) await kv.expire(key, WINDOW_SECONDS);
-    if (hits > MAX_REQUESTS) {
-      res.setHeader("Retry-After", String(WINDOW_SECONDS));
-      res.status(429).json({ error: "Too many requests, slow down." });
-      return true;
-    }
-  } catch {
-    // KV unavailable — fail open rather than blocking legit traffic
+export function isRateLimited(req: VercelRequest, res: VercelResponse): boolean {
+  const ip = getIp(req);
+  const now = Date.now();
+  const entry = store.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    store.set(ip, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
   }
+
+  entry.count += 1;
+  if (entry.count > MAX_REQUESTS) {
+    const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+    res.setHeader("Retry-After", String(retryAfter));
+    res.status(429).json({ error: "Too many requests, slow down." });
+    return true;
+  }
+
   return false;
 }
 

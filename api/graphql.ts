@@ -98,7 +98,7 @@ async function fetchRepoLanguages(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (await isRateLimited(req, res)) return;
+  if (isRateLimited(req, res)) return;
 
   const { username } = req.query;
 

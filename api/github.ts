@@ -40,7 +40,7 @@ async function fetchWithBackoff(
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { path, per_page, page, sort, type } = req.query;
 
-  if (await isRateLimited(req, res)) return;
+  if (isRateLimited(req, res)) return;
 
   if (!path || typeof path !== "string") {
     return res.status(400).json({ error: "Missing 'path' query parameter" });
