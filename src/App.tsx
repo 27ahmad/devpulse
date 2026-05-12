@@ -23,6 +23,7 @@ import { computeInsights } from "./utils/insights";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProfileSkeleton, AnalyticsSkeleton } from "./components/Skeleton";
 import { StoryPlayer } from "./story/StoryPlayer";
+import { placeholderPalette } from "./story/usePalette";
 import { ApiError } from "./utils/fetchApi";
 import type { GitHubUser } from "./hooks/useGitHubUser";
 import type { Insights } from "./utils/insights";
@@ -185,6 +186,16 @@ function HeroLanding({ onSearch }: { onSearch: (u: string) => void }) {
 }
 
 /* ─── Identity Banner ─── */
+function formatRecency(days: number | null): string | null {
+  if (days === null) return null;
+  if (days === 0) return "Active today";
+  if (days === 1) return "Active yesterday";
+  if (days < 7) return `Active ${days} days ago`;
+  if (days < 30) return `Active ${Math.floor(days / 7)}w ago`;
+  if (days < 365) return `Active ${Math.floor(days / 30)}mo ago`;
+  return "Inactive over 1y";
+}
+
 function IdentityBanner({
   user,
   insights,
@@ -194,6 +205,15 @@ function IdentityBanner({
 }) {
   const joinYear = new Date(user.created_at).getFullYear();
   const yearsActive = new Date().getFullYear() - joinYear;
+  const recency = insights ? formatRecency(insights.daysSinceLastActive) : null;
+  const recencyDot =
+    insights && insights.daysSinceLastActive !== null
+      ? insights.daysSinceLastActive <= 7
+        ? "#22c55e"
+        : insights.daysSinceLastActive <= 30
+          ? "#eab308"
+          : "#71717a"
+      : null;
 
   return (
     <motion.div
@@ -213,15 +233,26 @@ function IdentityBanner({
             <h2 className="text-lg font-semibold text-[var(--text)] sm:text-xl">
               {user.name ?? user.login}
             </h2>
-            <a
-              href={user.html_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
-            >
-              @{user.login}
-              <ExternalLink size={10} />
-            </a>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <a
+                href={user.html_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+              >
+                @{user.login}
+                <ExternalLink size={10} />
+              </a>
+              {recency && recencyDot && (
+                <span className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                  <span
+                    className="inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ backgroundColor: recencyDot }}
+                  />
+                  {recency}
+                </span>
+              )}
+            </div>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
               {user.bio && (
                 <span className="basis-full text-[var(--text-secondary)]">
@@ -250,6 +281,13 @@ function IdentityBanner({
                 </strong>{" "}
                 repos
               </span>
+              {insights && insights.restrictedContributions > 0 && (
+                <span className="flex items-center gap-1 text-[var(--text-muted)]/80">
+                  <Lock size={10} />+
+                  {insights.restrictedContributions.toLocaleString()} private
+                  shown
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -377,15 +415,23 @@ function StoryGate({ username, onExit }: { username: string; onExit: () => void 
     (userQuery.error as ApiError | undefined) ??
     (contribQuery.error as ApiError | undefined);
 
+  const placeholder = placeholderPalette(username);
+
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black px-6 text-center">
-        <div className="mb-4 text-2xl font-semibold text-white">
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6 text-center"
+        style={{ background: placeholder.gradient }}
+      >
+        <div className="mb-2 text-xs uppercase tracking-[0.3em] text-white/40">
+          @{username}
+        </div>
+        <div className="mb-6 max-w-md text-2xl font-semibold text-white">
           {error.message}
         </div>
         <button
           onClick={onExit}
-          className="rounded-full border border-white/20 bg-white/5 px-5 py-2 text-sm text-white/90"
+          className="rounded-full border border-white/20 bg-white/5 px-5 py-2 text-sm text-white/90 backdrop-blur hover:bg-white/10"
         >
           Back
         </button>
@@ -395,13 +441,16 @@ function StoryGate({ username, onExit }: { username: string; onExit: () => void 
 
   if (!ready) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
+        style={{ background: placeholder.gradient }}
+      >
         <motion.div
           className="h-12 w-12 rounded-full border-2 border-white/20 border-t-white"
           animate={{ rotate: 360 }}
           transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
         />
-        <div className="mt-6 text-sm uppercase tracking-[0.3em] text-white/50">
+        <div className="mt-6 text-sm uppercase tracking-[0.3em] text-white/60">
           Composing @{username}'s year
         </div>
       </div>

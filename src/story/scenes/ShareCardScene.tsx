@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Copy, ArrowRight, Check, Lock } from "lucide-react";
+import { Copy, ArrowRight, Check, Lock, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { SceneContext } from "../types";
 import { SceneShell } from "./sceneShared";
@@ -7,9 +7,10 @@ import { SceneShell } from "./sceneShared";
 interface Props {
   ctx: SceneContext;
   onDeepDive: () => void;
+  onReplay: () => void;
 }
 
-export function ShareCardScene({ ctx, onDeepDive }: Props) {
+export function ShareCardScene({ ctx, onDeepDive, onReplay }: Props) {
   const { user, insights, palette } = ctx;
   const [copied, setCopied] = useState(false);
 
@@ -91,7 +92,20 @@ export function ShareCardScene({ ctx, onDeepDive }: Props) {
         className="mt-8 flex flex-wrap items-center justify-center gap-3"
       >
         <button
-          onClick={handleCopy}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReplay();
+          }}
+          className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/90 backdrop-blur transition-colors hover:bg-white/10"
+        >
+          <RotateCcw size={14} />
+          Replay
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCopy();
+          }}
           className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/90 backdrop-blur transition-colors hover:bg-white/10"
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}

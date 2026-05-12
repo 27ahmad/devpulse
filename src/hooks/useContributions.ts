@@ -8,12 +8,24 @@ export interface LanguageStat {
   color: string | null;
 }
 
-export interface HomeBase {
+export interface RepoRef {
   nameWithOwner: string;
   url: string;
   commits: number;
   primaryLanguage: string | null;
   primaryLanguageColor: string | null;
+}
+
+export type HomeBase = RepoRef;
+
+export interface DayMark {
+  date: string;
+  count: number;
+}
+
+export interface WeekMark {
+  weekStartDate: string;
+  count: number;
 }
 
 export interface ContributionData {
@@ -31,12 +43,23 @@ export interface ContributionData {
 
   firstActiveDate: string | null;
   lastActiveDate: string | null;
+  bestDay: DayMark | null;
+  bestWeek: WeekMark | null;
   languages: LanguageStat[];
   homeBase: HomeBase | null;
+  topRepos: RepoRef[];
   reposCreatedThisYear: number;
   reposContributedTo: number;
   ownedReposContributed: number;
   starsEarned: number;
+  restrictedContributions: number;
+
+  prAdditions: number;
+  prDeletions: number;
+  prChangedFiles: number;
+  prMerged: number;
+  prSampleCount: number;
+
   userCreatedAt: string;
 }
 

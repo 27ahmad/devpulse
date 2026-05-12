@@ -30,6 +30,17 @@ export function BestMonthScene({ ctx }: { ctx: SceneContext }) {
         <CountUp value={insights.bestMonth.count} duration={1.2} />
         <span className="ml-2 text-white/60 font-normal text-xl">contributions.</span>
       </motion.div>
+      {insights.bestMonth.aboveAverage > 0.15 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.55 }}
+          transition={{ delay: 2.1, duration: 0.6 }}
+          className="mt-3 text-xs uppercase tracking-[0.3em]"
+          style={{ color: palette.accent }}
+        >
+          {Math.round(insights.bestMonth.aboveAverage * 100)}% above your monthly average.
+        </motion.div>
+      )}
     </SceneShell>
   );
 }

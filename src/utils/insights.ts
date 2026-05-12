@@ -1,4 +1,11 @@
-import type { ContributionData, HomeBase, LanguageStat } from "../hooks/useContributions";
+import type {
+  ContributionData,
+  DayMark,
+  HomeBase,
+  LanguageStat,
+  RepoRef,
+  WeekMark,
+} from "../hooks/useContributions";
 import type { GitHubUser } from "./../hooks/useGitHubUser";
 import { computeStreaks } from "./streaks";
 
@@ -29,6 +36,7 @@ export interface Insights {
   activeDays: number;
   velocity: number;
   recency30: number;
+  daysSinceLastActive: number | null;
 
   specializationPct: number;
   languageDiversity: number;
@@ -42,7 +50,9 @@ export interface Insights {
 
   collabShare: number;
 
-  bestMonth: { label: string; count: number } | null;
+  bestMonth: { label: string; count: number; aboveAverage: number } | null;
+  bestDay: DayMark | null;
+  bestWeek: WeekMark | null;
 
   currentStreak: number;
   longestStreak: number;
@@ -50,10 +60,18 @@ export interface Insights {
   firstActiveDate: string | null;
   lastActiveDate: string | null;
   homeBase: HomeBase | null;
+  topRepos: RepoRef[];
   reposCreatedThisYear: number;
   reposContributedTo: number;
   starsEarned: number;
+  restrictedContributions: number;
   yearsOnGitHub: number;
+
+  prAdditions: number;
+  prDeletions: number;
+  prChangedFiles: number;
+  prMerged: number;
+  prSampleCount: number;
 
   archetype: Archetype;
 }
@@ -70,6 +88,11 @@ function shannonEntropy(shares: number[]): number {
     if (p > 0) h -= p * Math.log(p);
   }
   return h;
+}
+
+function daysBetween(a: string, b: Date): number {
+  const ms = b.getTime() - new Date(a).getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
 }
 
 function deriveArchetype(
@@ -167,6 +190,10 @@ export function computeInsights(args: {
     0
   );
 
+  const daysSinceLastActive = c.lastActiveDate
+    ? daysBetween(c.lastActiveDate, new Date())
+    : null;
+
   const totalLangCommits = languages.reduce((s, l) => s + l.commits, 0);
   const primaryLanguage = languages[0]?.language ?? null;
   const specializationPct =
@@ -194,11 +221,21 @@ export function computeInsights(args: {
       ? (c.pullRequests + c.reviews) / c.totalContributions
       : 0;
 
-  let bestMonth: { label: string; count: number } | null = null;
-  for (const [key, count] of Object.entries(c.monthlyTotals)) {
-    if (!bestMonth || count > bestMonth.count) {
-      const month = parseInt(key.split("-")[1], 10) - 1;
-      bestMonth = { label: MONTH_NAMES[month] ?? key, count };
+  // Best month with "above average" delta
+  let bestMonth: { label: string; count: number; aboveAverage: number } | null = null;
+  const monthEntries = Object.entries(c.monthlyTotals);
+  if (monthEntries.length > 0) {
+    const counts = monthEntries.map(([, n]) => n);
+    const avg = counts.reduce((s, n) => s + n, 0) / counts.length;
+    for (const [key, count] of monthEntries) {
+      if (!bestMonth || count > bestMonth.count) {
+        const month = parseInt(key.split("-")[1], 10) - 1;
+        bestMonth = {
+          label: MONTH_NAMES[month] ?? key,
+          count,
+          aboveAverage: avg > 0 ? (count - avg) / avg : 0,
+        };
+      }
     }
   }
 
@@ -219,6 +256,7 @@ export function computeInsights(args: {
     activeDays,
     velocity,
     recency30,
+    daysSinceLastActive,
     specializationPct,
     languageDiversity,
     languagesUsedCount: significant.length,
@@ -229,15 +267,24 @@ export function computeInsights(args: {
     peakDayIndex,
     collabShare,
     bestMonth,
+    bestDay: c.bestDay,
+    bestWeek: c.bestWeek,
     currentStreak: streaks.currentStreak,
     longestStreak: streaks.longestStreak,
     firstActiveDate: c.firstActiveDate,
     lastActiveDate: c.lastActiveDate,
     homeBase: c.homeBase,
+    topRepos: c.topRepos ?? [],
     reposCreatedThisYear: c.reposCreatedThisYear,
     reposContributedTo: c.reposContributedTo,
     starsEarned: c.starsEarned,
+    restrictedContributions: c.restrictedContributions ?? 0,
     yearsOnGitHub,
+    prAdditions: c.prAdditions ?? 0,
+    prDeletions: c.prDeletions ?? 0,
+    prChangedFiles: c.prChangedFiles ?? 0,
+    prMerged: c.prMerged ?? 0,
+    prSampleCount: c.prSampleCount ?? 0,
   };
 
   return { ...base, archetype: deriveArchetype(base) };
