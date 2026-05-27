@@ -76,6 +76,55 @@ query($username: String!) {
 }
 `;
 
+const CONTRIBUTIONS_VIEWER_QUERY = `
+query {
+  viewer {
+    createdAt
+    contributionsCollection {
+      restrictedContributionsCount
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+            weekday
+          }
+        }
+      }
+      totalCommitContributions
+      totalPullRequestContributions
+      totalPullRequestReviewContributions
+      totalIssueContributions
+      totalRepositoriesWithContributedCommits
+      commitContributionsByRepository(maxRepositories: 100) {
+        contributions { totalCount }
+        repository {
+          nameWithOwner
+          url
+          isPrivate
+          isFork
+          stargazerCount
+          owner { login }
+          primaryLanguage { name color }
+        }
+      }
+      pullRequestContributions(first: 100) {
+        nodes {
+          pullRequest {
+            additions
+            deletions
+            changedFiles
+            merged
+          }
+        }
+      }
+      totalRepositoryContributions
+    }
+  }
+}
+`;
+
 interface CommitContrib {
   contributions: { totalCount: number };
   repository: {
@@ -138,7 +187,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "Server misconfigured: missing token" });
   }
 
+  // 1. Verify if the token owner matches the queried username to unlock private viewer query
+  let isViewerQuery = false;
+  if (authHeader && authHeader.startsWith("Bearer ") && authHeader.length > 7) {
+    try {
+      const userRes = await fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "User-Agent": "DevPulse",
+          Accept: "application/vnd.github+json",
+        },
+      });
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        if (userData && userData.login && userData.login.toLowerCase() === username.toLowerCase()) {
+          isViewerQuery = true;
+        }
+      }
+    } catch {
+      // Ignore and fallback to standard public user query
+    }
+  }
+
   try {
+    const query = isViewerQuery ? CONTRIBUTIONS_VIEWER_QUERY : CONTRIBUTIONS_QUERY;
+    const variables = isViewerQuery ? {} : { username };
+
     const response = await fetch(GITHUB_GRAPHQL, {
       method: "POST",
       headers: {
@@ -147,8 +221,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         "User-Agent": "DevPulse",
       },
       body: JSON.stringify({
-        query: CONTRIBUTIONS_QUERY,
-        variables: { username },
+        query,
+        variables,
       }),
     });
 
@@ -158,11 +232,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: data.errors[0]?.message ?? "GraphQL error" });
     }
 
-    if (!data.data?.user) {
+    const user = isViewerQuery ? data.data?.viewer : data.data?.user;
+    if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const user = data.data.user;
     const collection = user.contributionsCollection;
     const calendar = collection.contributionCalendar;
 

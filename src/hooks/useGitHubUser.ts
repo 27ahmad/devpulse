@@ -15,8 +15,12 @@ export interface GitHubUser {
 }
 
 async function fetchUser(username: string): Promise<GitHubUser> {
+  const loggedInUser = localStorage.getItem("devpulse_github_username");
+  const isSelf = loggedInUser && loggedInUser.toLowerCase() === username.toLowerCase();
+  const path = isSelf ? "user" : `users/${encodeURIComponent(username)}`;
+  
   return fetchJson<GitHubUser>(
-    `/api/github?path=users/${encodeURIComponent(username)}`
+    `/api/github?path=${path}`
   );
 }
 
