@@ -1,11 +1,20 @@
-import { Star, GitFork, ExternalLink, Lock } from "lucide-react";
+import { useState } from "react";
+import { Star, GitFork, ExternalLink, Lock, Clock } from "lucide-react";
 import type { GitHubRepo } from "../hooks/useGitHubRepos";
 import { getLanguageColor } from "../utils/languages";
 
 export function TopProjects({ repos }: { repos: GitHubRepo[] }) {
-  const top = repos
+  const [sortBy, setSortBy] = useState<"stars" | "updated">("stars");
+
+  const top = [...repos]
     .filter((r) => !r.fork)
-    .sort((a, b) => b.stargazers_count - a.stargazers_count)
+    .sort((a, b) => {
+      if (sortBy === "stars") {
+        return b.stargazers_count - a.stargazers_count;
+      } else {
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      }
+    })
     .slice(0, 6);
 
   if (top.length === 0) return null;
@@ -13,13 +22,31 @@ export function TopProjects({ repos }: { repos: GitHubRepo[] }) {
   return (
     <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)]">
       <div className="border-b border-[var(--border-subtle)] px-5 py-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-[var(--text)]">
-            Top Projects
-          </span>
-          <span className="text-[10px] text-[var(--text-muted)]">
-            By stars, all time
-          </span>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-[var(--text)]">
+              Top Projects
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)]">
+              {sortBy === "stars" ? "By stars, all time" : "By recent activity & commits"}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-lg bg-[var(--surface-2)] p-0.5 self-start sm:self-auto">
+            <button
+              onClick={() => setSortBy("stars")}
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] font-medium transition-colors ${sortBy === "stars" ? "bg-[var(--surface)] text-[var(--text)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}
+            >
+              <Star size={10} />
+              Most Starred
+            </button>
+            <button
+              onClick={() => setSortBy("updated")}
+              className={`flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] font-medium transition-colors ${sortBy === "updated" ? "bg-[var(--surface)] text-[var(--text)] shadow-sm" : "text-[var(--text-secondary)] hover:text-[var(--text)]"}`}
+            >
+              <Clock size={10} />
+              Recent Activity
+            </button>
+          </div>
         </div>
       </div>
       <div className="divide-y divide-[var(--border-subtle)]">

@@ -179,8 +179,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const authHeader = req.headers.authorization;
-  const token = (authHeader && authHeader.startsWith("Bearer ") && authHeader.length > 7)
-    ? authHeader.slice(7)
+  const isBearer = authHeader && /^bearer\s+/i.test(authHeader);
+  const token = isBearer
+    ? authHeader.split(/\s+/)[1]
     : process.env.GITHUB_PAT;
 
   if (!token) {
@@ -189,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 1. Verify if the token owner matches the queried username to unlock private viewer query
   let isViewerQuery = false;
-  if (authHeader && authHeader.startsWith("Bearer ") && authHeader.length > 7) {
+  if (isBearer) {
     try {
       const userRes = await fetch("https://api.github.com/user", {
         headers: {

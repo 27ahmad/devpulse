@@ -86,8 +86,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ") && authHeader.length > 7) {
-    headers.Authorization = authHeader;
+  const isBearer = authHeader && /^bearer\s+/i.test(authHeader);
+  if (isBearer) {
+    const userToken = authHeader.split(/\s+/)[1];
+    headers.Authorization = `Bearer ${userToken}`;
   } else if (process.env.GITHUB_PAT) {
     headers.Authorization = `Bearer ${process.env.GITHUB_PAT}`;
   }
