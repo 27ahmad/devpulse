@@ -12,6 +12,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const params = new URLSearchParams({
     client_id: clientId,
     scope,
+    prompt: "consent",
   });
 
   const githubAuthUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
