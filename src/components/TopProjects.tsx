@@ -1,4 +1,4 @@
-import { Star, GitFork, ExternalLink } from "lucide-react";
+import { Star, GitFork, ExternalLink, Lock } from "lucide-react";
 import type { GitHubRepo } from "../hooks/useGitHubRepos";
 import { getLanguageColor } from "../utils/languages";
 
@@ -35,10 +35,16 @@ export function TopProjects({ repos }: { repos: GitHubRepo[] }) {
               {i + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="truncate text-sm font-medium text-[var(--text)] group-hover:text-[var(--accent)]">
                   {repo.name}
                 </span>
+                {repo.private && (
+                  <span className="inline-flex items-center gap-1 rounded border border-amber-500/20 bg-amber-500/5 px-1.5 py-0.5 text-[9px] font-semibold text-amber-500 uppercase tracking-wider">
+                    <Lock size={8} className="shrink-0" />
+                    Private
+                  </span>
+                )}
                 <ExternalLink
                   size={10}
                   className="shrink-0 text-[var(--text-muted)] opacity-0 group-hover:opacity-100"

@@ -13,13 +13,18 @@ export interface GitHubRepo {
   created_at: string;
   updated_at: string;
   fork: boolean;
+  private: boolean;
 }
 
 async function fetchRepos(username: string): Promise<GitHubRepo[]> {
+  const loggedInUser = localStorage.getItem("devpulse_github_username");
+  const isSelf = loggedInUser && loggedInUser.toLowerCase() === username.toLowerCase();
+  const path = isSelf ? "user/repos" : `users/${encodeURIComponent(username)}/repos`;
+
   const allRepos: GitHubRepo[] = [];
   for (let page = 1; page <= 2; page++) {
     const repos = await fetchJson<GitHubRepo[]>(
-      `/api/github?path=users/${encodeURIComponent(username)}/repos&sort=updated&per_page=100&type=owner&page=${page}`
+      `/api/github?path=${path}&sort=updated&per_page=100&type=owner&page=${page}`
     );
     allRepos.push(...repos);
     if (repos.length < 100) break;

@@ -29,6 +29,7 @@ const ALLOWED_ENDPOINTS = [
   "repos",
   "events",
   "languages",
+  "user",
 ] as const;
 
 function isAllowedPath(path: string): boolean {
@@ -84,7 +85,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     "User-Agent": "DevPulse",
   };
 
-  if (process.env.GITHUB_PAT) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ") && authHeader.length > 7) {
+    headers.Authorization = authHeader;
+  } else if (process.env.GITHUB_PAT) {
     headers.Authorization = `Bearer ${process.env.GITHUB_PAT}`;
   }
 

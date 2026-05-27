@@ -129,7 +129,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Invalid or missing 'username' parameter" });
   }
 
-  const token = process.env.GITHUB_PAT;
+  const authHeader = req.headers.authorization;
+  const token = (authHeader && authHeader.startsWith("Bearer ") && authHeader.length > 7)
+    ? authHeader.slice(7)
+    : process.env.GITHUB_PAT;
+
   if (!token) {
     return res.status(500).json({ error: "Server misconfigured: missing token" });
   }

@@ -17,7 +17,13 @@ function readResetHeader(res: Response): number | null {
 }
 
 export async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+  const headers: Record<string, string> = {};
+  const token = localStorage.getItem("devpulse_github_token");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { headers });
   if (res.ok) return res.json() as Promise<T>;
 
   let message = `Request failed (${res.status})`;
